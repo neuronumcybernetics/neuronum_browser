@@ -30,11 +30,11 @@
           <div class="placeTransmitterLogoSmall"><img src="/static/logo.png" class="transmitterLogoSmall"></div>
           <div class="txID">send to <span id="email"></span></div>
 
-          <form id="validateCellKeyForm" action="/validateCellKey" method="post" enctype="multipart/form-data">
+          <form id="validateCellKeyForm" method="post" enctype="multipart/form-data">
             <div class="keyInputContainer"> 
               <input class="connectInput" id="cellKey" name="cellKey" style="color: white;" placeholder="enter cell key" required>
             </div>
-            <button type="button" id="validateCellKey" class="uploadButton">validate</button>
+            <button type="submit" id="validateCellKey" class="uploadButton">validate</button>
           </form>
       </div>
    
@@ -56,20 +56,21 @@
       }
   };
 
-  document.getElementById('validateCellKey').addEventListener('click', async function() {
-      const cellKey = document.getElementById('cellKey').value.trim();
-      const email = localStorage.getItem('email');
-      const host = localStorage.getItem('host');
+  document.getElementById('validateCellKeyForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Prevent the default form submission
+    const cellKey = document.getElementById('cellKey').value.trim();
+    const email = localStorage.getItem('email');
+    const host = localStorage.getItem('host');
 
-      if (!cellKey) {
-          alert("Please enter the cell key.");
-          return;
-      }
+    if (!cellKey) {
+        alert("Please enter the cell key.");
+        return;
+    }
 
-      if (!email || !host) {
-          alert("Missing email or host information.");
-          return;
-      }
+    if (!email || !host) {
+        alert("Missing email or host information.");
+        return;
+    }
 
     try {
         const response = await fetch('https://neuronum.net/api/verify_email', {
@@ -88,12 +89,10 @@
             const result = await response.json();
             console.log('Verification successful:', result);
 
-            // Store synapse if it's in the response
             if (result.synapse) {
                 localStorage.setItem('synapse', result.synapse);
             }
 
-            // Redirect to next page
             window.location.href = '/neuronum_cellai';
         } else {
             const error = await response.json();
@@ -104,8 +103,8 @@
         console.error("Error submitting form:", err);
         alert("An error occurred while verifying the cell key.");
     }
+});
 
-  });
 </script>
 
 
