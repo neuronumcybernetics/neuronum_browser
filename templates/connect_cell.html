@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>                              
+  <meta name="description" content="Neuronum is the real-time data engine for developers to build AI native apps and services in minutes using high-level Python">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="max-image-preview: none">
+  <title>Neuronum: The Real-Time E2E Browser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
+  <link rel="stylesheet" href="/static/desktop_design.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+
+  <body class="pageContainer">
+
+    <div class="socials desktop">
+      <a href="https://www.github.com/neuronumcybernetics" target="_blank"><i class="fa-brands fa-github"></i></a>&nbsp;
+    </div>
+
+
+      <div class="connectContainer">
+        <div class="connector">
+            <div class="txTitle">CONNECT CELL</div>
+            <div class="placeTransmitterLogoSmall"><img src="/static/logo.png" class="transmitterLogoSmall"></div>
+            <div class="txID">connect to network</div>
+
+            <form id="connectCellForm" action="/connectCell" method="post" enctype="multipart/form-data">
+                <div class="connectInputContainer"> 
+                    <input type="email" class="connectInput" id="email" name="email" style="color: white;" placeholder="email address" required>
+                    <input class="connectInput" type="password" id="password" name="password" style="color: white;" placeholder="password" required>
+                </div>
+                <button type="button" id="connectCell" class="uploadButton">connect</button>
+            </form>
+        </div>
+
+   <div class="footerContainer">
+      <a href="/" class="backButton">
+          <i class="fas fa-long-arrow-alt-left"></i>
+      </a>
+      <div class="fixedFooter">
+        <a href="/"><img src="/static/logo.png" alt="Neuronum Logo - A Cyber Neuron" class="headerLogo" ></a>
+        <a class="footerMail" href="mailto:welcome@neuronum.net">welcome@neuronum.net</a>
+      </div>
+    </div>
+
+   <script>
+        document.getElementById('connectCell').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const fields = [
+                { value: email, message: 'Please enter an email address' },
+                { value: password, message: 'Please enter a password' }
+            ];
+
+            for (const field of fields) {
+                if (field.value.length === 0) {
+                    alert(field.message);
+                    return;
+                }
+            }
+
+            const requestData = {
+                email: email,
+                password: password
+            };
+
+            fetch('https:neuronum.net/api/connect_cell', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+           .then(response => response.json())
+          .then(data => {
+              console.log('Success:', data);
+
+              localStorage.setItem('email', email);
+              localStorage.setItem('password', password);
+              localStorage.setItem('host', data.host);
+
+              window.location.href = '/cellkey';
+          })
+          .catch((error) => {
+              console.error('Error:', error);
+              alert('Connection failed, please try again!');
+          });
+      });
+    </script>
+    </body>
+</html>
+
+

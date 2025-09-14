@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>                              
+  <meta name="description" content="Neuronum is the real-time data engine for developers to build AI native apps and services in minutes using high-level Python">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="max-image-preview: none">
+  <title>Neuronum: The Real-Time E2E Browser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
+  <link rel="stylesheet" href="/static/desktop_design.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+
+  <body class="pageContainer">
+
+    <div class="socials desktop">
+      <a href="https://www.github.com/neuronumcybernetics" target="_blank"><i class="fa-brands fa-github"></i></a>&nbsp;
+    </div>
+    
+    <footer class="headerContainer">
+      <div class="footerName">NEURONUM CYBERNETICS UG <span style="font-size: 14px;">&copy;</span> 2025</div>
+    </footer>
+
+    <div class="startCard">
+
+        <img src="/static/logo.png" alt="Neuronum Logo" class="introLogo"><br class="desktop">
+        
+        <div class="title">
+          <em><b>NEURONUM CELLai v0.0.1</b></em><br>
+          <b>THE REAL-TIME E2E BROWSER</b><br><br class="mobile">
+        </div>
+
+        <div class="linkContainer">
+          <a href="/connect_cell" class="link">
+            CONNECT CELL&nbsp;&nbsp; <i class="fas fa-long-arrow-alt-right"></i>
+          </a>
+          
+          <a href="/create_cell" class="link desktop">
+            CREATE CELL&nbsp;&nbsp;&nbsp;<i class="fas fa-long-arrow-alt-right"></i>
+          </a>
+
+          <a href="https://github.com/neuronumcybernetics/neuronum" class="link" target="_blank">
+            GET STARTED&nbsp;&nbsp;&nbsp;<i class="fas fa-long-arrow-alt-right"></i>
+          </a>
+        </div>
+
+    </div>
+
+    
+    <div class="footerContainer">
+      <div class="fixedFooter">
+        <a href="/"><img src="/static/logo.png" alt="Neuronum Logo - A Cyber Neuron" class="headerLogo" ></a>
+        <a class="footerMail" href="mailto:welcome@neuronum.net">welcome@neuronum.net</a>
+      </div>
+    </div>
+
+  <div id="termspopup" class="termspopup">
+
+    <div class="termspopupmeta">
+      by using our services, you agree to our 
+      <a href="https://neuronum.net/legals" target="_blank">Terms & Conditions</a> 
+      and the collection and use of data as described in our 
+      <a href="https://neuronum.net/legals" target="_blank">Privacy Policy</a>
+    </div>
+
+    <button class="termsclose" id="termsclose">
+      <span style="color: white;">close window&nbsp;&nbsp;<i class="fas fa-long-arrow-alt-right"></i></span>
+    </button>
+
+  </div>
+
+  </body>
+
+
+
+<script>
+ window.onload = function() {
+    let popup = document.getElementById('termspopup');
+    let closeBtn = document.getElementById('termsclose');
+
+    let currentDate = new Date().getTime();
+    let agreedTimestamp = localStorage.getItem('agreedTimestamp');
+    const EXPIRATION_PERIOD = 30 * 24 * 60 * 60 * 1000;
+
+    if (!agreedTimestamp || currentDate - agreedTimestamp > EXPIRATION_PERIOD) {
+        popup.style.display = 'flex';
+        setTimeout(function() {
+            popup.classList.add('show'); 
+        }, 10); 
+    }
+
+    closeBtn.onclick = function() {
+        localStorage.setItem('agreedTimestamp', currentDate);
+        popup.classList.remove('show');  
+        setTimeout(function() {
+            popup.style.display = 'none';  
+        }, 500); 
+    };
+};
+</script>
+
+</html>
