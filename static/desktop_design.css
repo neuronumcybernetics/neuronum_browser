@@ -1935,7 +1935,7 @@
       margin-top: 15px;
       display: flex;             /* Make the container a flex container */
       justify-content: space-between; 
-      width: 480px;             /* Ensure the container takes up full width */
+      width: 490px;             /* Ensure the container takes up full width */
     }
 
     .linkContainerExplore { 

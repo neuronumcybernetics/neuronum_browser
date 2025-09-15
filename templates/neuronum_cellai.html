@@ -202,8 +202,6 @@
   <script>
     window.onload = function () {
       const host = localStorage.getItem('host');
-      const password = localStorage.getItem('password');
-      const synapse = localStorage.getItem('synapse');
       const session = localStorage.getItem('session');
 
       const hostSpan = document.getElementById('host');
@@ -288,10 +286,10 @@
       const nodeSearchInput = document.getElementById('node-search');
       let allNodes = [];
 
-      if (host && password && synapse) {
+      if (host && session) {
         fetchNodes();
       } else {
-        console.error("Missing Host, Password, or Synapse for node list.");
+        console.error("Missing Host, Session for node list.");
       }
 
       nodeSearchInput.addEventListener('input', (event) => {
@@ -300,12 +298,10 @@
       });
 
       async function fetchNodes() {
-        const payload = {
-          cell: { host, password, synapse }
-        };
+        const payload = { host, session };
 
         try {
-            const response = await fetch("https://neuronum.net/api/list_nodes", {
+            const response = await fetch("https://neuronum.net/browser/api/list_nodes", {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
