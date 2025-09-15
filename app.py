@@ -22,6 +22,10 @@ def cellkey():
 def create_cell():
     return render_template('create_cell.html')
 
+@server.route('/nodes')
+def nodes():
+    return render_template('nodes.html')
+
 @server.route('/neuronum_cellai')
 def neuronum_cellai():
     return render_template('neuronum_cellai.html')
