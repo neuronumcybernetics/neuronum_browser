@@ -129,6 +129,42 @@
       flex-direction: column;
       gap: 18px;
     }
+
+    /* CSS for the search bar */
+    .search-container {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search-container input[type="text"] {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      background-color: #1c1c1c;
+      color: #fff;
+      border: 1px solid #333;
+    }
+
+    /* New CSS for the "no app selected" state */
+    .no-app-selected {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      height: 100%;
+      opacity: 0.5;
+    }
+
+    .no-app-selected img {
+      width: 65px;
+      height: 65px;
+      margin-bottom: -5px;
+    }
   </style>
 </head>
 <body class="pageContainer">
@@ -141,10 +177,16 @@
     </div>
     <div class="bento-card node-list-card">
       <h3>Nodes</h3>
+      <div class="search-container">
+          <input type="text" id="node-search" placeholder="Search nodes...">
+      </div>
       <div id="node-list" class="node-list-container"></div>
     </div>
     <div class="bento-card node-screen-card" id="html-output">
-      <h3>no app selected</h3>
+      <div class="no-app-selected">
+        <img src="/static/logo.png" alt="Neuronum Logo">
+        <h4>no running app...</h4>
+      </div>
       <div id="node-list-screen" class="node-list-container"></div>
     </div>
   </div>
@@ -192,8 +234,15 @@
 
             if (label === "tx_response" && payload.html) {
               const htmlOutput = document.getElementById("html-output");
-              htmlOutput.style.display = "flex";
-              htmlOutput.innerHTML = payload.html;
+              
+              htmlOutput.innerHTML = "";
+              
+              const tempDiv = document.createElement("div");
+              tempDiv.innerHTML = payload.html;
+
+              while (tempDiv.firstChild) {
+                htmlOutput.appendChild(tempDiv.firstChild);
+              }
 
               const scripts = htmlOutput.querySelectorAll("script");
               scripts.forEach(oldScript => {
@@ -235,15 +284,20 @@
         });
       }
 
-      // --- Start of nodes.html logic integrated here ---
       const nodeListContainer = document.getElementById('node-list');
-      
+      const nodeSearchInput = document.getElementById('node-search');
+      let allNodes = [];
+
       if (host && password && synapse) {
         fetchNodes();
       } else {
-        // You can add a message here to indicate no nodes will be fetched
         console.error("Missing Host, Password, or Synapse for node list.");
       }
+
+      nodeSearchInput.addEventListener('input', (event) => {
+        const searchTerm = event.target.value.toLowerCase();
+        renderNodes(searchTerm);
+      });
 
       async function fetchNodes() {
         const payload = {
@@ -275,13 +329,40 @@
             nodeListContainer.appendChild(p);
             return;
           }
+          
+          allNodes = result.Nodes;
+          renderNodes("");
+        } catch (err) {
+          console.error("Fetch failed: " + err.message);
+          const p = document.createElement("p");
+          p.textContent = "Failed to fetch nodes. Network error.";
+          nodeListContainer.appendChild(p);
+        }
+      }
 
-          result.Nodes.forEach(node => {
+      function renderNodes(searchTerm) {
+          nodeListContainer.innerHTML = '';
+
+          const filteredNodes = allNodes.filter(node => {
+              const nodeDescription = node.descr.toLowerCase();
+              const gatewayInfo = (node.config?.data_gateways || []).map(g => g.info.toLowerCase()).join(' ');
+              const fullText = `${nodeDescription} ${gatewayInfo}`;
+              return fullText.includes(searchTerm);
+          });
+          
+          if (filteredNodes.length === 0) {
+              const p = document.createElement("p");
+              p.textContent = "No nodes found matching your search.";
+              nodeListContainer.appendChild(p);
+              return;
+          }
+
+          filteredNodes.forEach(node => {
             const nodeCard = document.createElement("div");
             nodeCard.className = "node-card";
 
             const title = document.createElement("h4");
-            title.textContent = `${node.nodeID}: ${node.descr}`;
+            title.textContent = `${node.descr}`;
             nodeCard.appendChild(title);
 
             if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
@@ -289,40 +370,34 @@
               gatewayList.style.listStyle = "none";
               gatewayList.style.paddingLeft = "0";
 
-              node.config.data_gateways.forEach(gateway => {
-                const li = document.createElement("li");
-                li.style.marginBottom = "10px";
+              const filteredGateways = node.config.data_gateways.filter(gateway => gateway.id.endsWith("::tx"));
 
-                const span = document.createElement("span");
-                span.textContent = `Gateway ID: ${gateway.id}`;
+              filteredGateways.forEach(gateway => {
+                  const li = document.createElement("li");
+                  li.style.marginBottom = "10px";
 
-                const btn = document.createElement("button");
-                btn.className = "gateway-btn";
-                btn.textContent = "Send Request";
+                  const btn = document.createElement("button");
+                  btn.className = "gateway-btn";
+                  btn.textContent = gateway.info;
 
-                btn.addEventListener("click", async () => {
-                  const url = `https://your-api-endpoint.example.com/api/your-route?gateway_id=${encodeURIComponent(gateway.id)}`;
-                  console.log(`Sending request for ${gateway.id}...`);
-                  try {
-                    const res = await fetch(url);
-                    if (res.ok) {
-                      const data = await res.json();
-                      console.log(`Response for ${gateway.id}: ${JSON.stringify(data)}`);
-                      // You can add a visual indicator or update an element on the page here
-                      // to show the result of the request.
-                    } else {
-                      console.error(`Error ${res.status}: ${res.statusText}`);
-                    }
-                  } catch (err) {
-                    console.error(`Fetch error: ${err.message}`);
-                  }
-                });
-
-                li.appendChild(span);
-                li.appendChild(btn);
-                gatewayList.appendChild(li);
+                  btn.addEventListener("click", async () => {
+                      const url = `https://your-api-endpoint.example.com/api/your-route?gateway_id=${encodeURIComponent(gateway.id)}`;
+                      console.log(`Sending request for ${gateway.id}...`);
+                      try {
+                          const res = await fetch(url);
+                          if (res.ok) {
+                              const data = await res.json();
+                              console.log(`Response for ${gateway.id}: ${JSON.stringify(data)}`);
+                          } else {
+                              console.error(`Error ${res.status}: ${res.statusText}`);
+                          }
+                      } catch (err) {
+                          console.error(`Fetch error: ${err.message}`);
+                      }
+                  });
+                  li.appendChild(btn);
+                  gatewayList.appendChild(li);
               });
-
               nodeCard.appendChild(gatewayList);
             } else {
               const p = document.createElement("p");
@@ -332,13 +407,6 @@
 
             nodeListContainer.appendChild(nodeCard);
           });
-
-        } catch (err) {
-          console.error("Fetch failed: " + err.message);
-          const p = document.createElement("p");
-          p.textContent = "Failed to fetch nodes. Network error.";
-          nodeListContainer.appendChild(p);
-        }
       }
     };
   </script>
