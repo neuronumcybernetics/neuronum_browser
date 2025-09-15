@@ -27,11 +27,12 @@
       justify-content: space-between;
     }
 
-    .bento-card:hover {
+    .bento-card:hover:not(.node-screen-card) {
       transform: scale(1.03);
       border-color: rgba(134, 134, 134, 0.12);
       background: rgba(255, 255, 255, 0.03);
     }
+
 
     .bento-card h3 {
       margin: 0 0 10px;
@@ -84,7 +85,7 @@
       grid-column: 2;
       grid-row: 1 / span 2; /* This makes the card span both rows */
       overflow-y: auto;
-      padding: 0; /* REMOVED PADDING HERE */
+      padding: 0;
     }
 
     /* Hides the scrollbar for the node list card */
@@ -97,7 +98,7 @@
       display: none;
     }
 
-     .node-screen-card {
+    .node-screen-card {
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
@@ -217,34 +218,49 @@
   </div>
   
   <script>
-    function handleTxResponse(payload) {
-      const htmlOutput = document.getElementById("html-output");
-      htmlOutput.innerHTML = "";
-      
-      if (payload && payload.html) {
-        // Create an iframe to display the HTML content
-        const iframe = document.createElement("iframe");
-        htmlOutput.appendChild(iframe);
-        
-        // Write the HTML to the iframe's document
-        const iframeDoc = iframe.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(payload.html);
-        iframeDoc.close();
-      } else if (payload && payload.json) {
-        // Display JSON as a pre-formatted block
-        const pre = document.createElement("pre");
-        pre.textContent = payload.json;
-        htmlOutput.appendChild(pre);
-      } else {
-        htmlOutput.innerHTML = `
-          <div class="no-app-selected">
-            <img src="/static/logo.png" alt="Neuronum Logo">
-            <h4>no running app...</h4>
-          </div>
-        `;
-      }
-    }
+    function handleTxResponse(payload, host, session) {
+  const htmlOutput = document.getElementById("html-output");
+  htmlOutput.innerHTML = "";
+
+  if (payload && payload.html) {
+    // Escape single quotes in host and session variables
+    const escapedHost = host.replace(/'/g, "\\'");
+    const escapedSession = session.replace(/'/g, "\\'");
+
+    // Create the script tag content to inject with escaped values
+    // Create an iframe to display the HTML content
+  const iframe = document.createElement("iframe");
+  htmlOutput.appendChild(iframe);
+
+  // Wait for iframe to be ready
+  iframe.onload = () => {
+    const iframeWindow = iframe.contentWindow;
+
+    // Set global variables directly
+    iframeWindow.CLIENT_CELL = host;
+    iframeWindow.CLIENT_SESSION = session;
+  };
+
+  // Write the HTML content to the iframe's document
+  const iframeDoc = iframe.contentWindow.document;
+  iframeDoc.open();
+  iframeDoc.write(payload.html);
+  iframeDoc.close();
+
+  } else if (payload && payload.json) {
+    // Display JSON as a pre-formatted block
+    const pre = document.createElement("pre");
+    pre.textContent = payload.json;
+    htmlOutput.appendChild(pre);
+  } else {
+    htmlOutput.innerHTML = `
+      <div class="no-app-selected">
+        <img src="/static/logo.png" alt="Neuronum Logo">
+        <h4>no running app...</h4>
+      </div>
+    `;
+  }
+}
 
     window.onload = function () {
       const host = localStorage.getItem('host');
@@ -265,8 +281,7 @@
       }
 
       const streamID = host?.replace("::cell", "::stx");
-      const payload = { host, session };
-
+      
       // Re-add WebSocket to handle future updates
       let reconnectInterval;
       const reconnectDelay = 5000;
@@ -293,7 +308,8 @@
           try {
             const data = JSON.parse(event.data);
             if (data.label === "tx_response") {
-              handleTxResponse(data.data || {});
+              // Pass host and session to the handleTxResponse function
+              handleTxResponse(data.data || {}, host, session);
             }
           } catch (e) {
             console.error("Invalid JSON in message:", e);
@@ -433,7 +449,8 @@
                     console.log(`Response for ${gateway.id}:`, data);
                     
                     if (data.success && data.response) {
-                      handleTxResponse(data.response);
+                      // Pass host and session to the handleTxResponse function
+                      handleTxResponse(data.response, host, session);
                     } else {
                       console.log("No valid response data found.");
                     }
