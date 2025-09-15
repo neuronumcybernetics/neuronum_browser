@@ -188,6 +188,7 @@
     const host = localStorage.getItem('host');
     const password = localStorage.getItem('password');
     const synapse = localStorage.getItem('synapse');
+    const session = localStorage.getItem('session');
 
     const hostSpan = document.getElementById('host');
     if (host && hostSpan) {
@@ -207,13 +208,13 @@
     }
 
     async function fetchNodes({ host, password, synapse }) {
-  const payload = {
-    cell: {
-      host,
-      password,
-      synapse
-    }
-  };
+    const payload = {
+      cell: {
+        host,
+        password,
+        synapse
+      }
+    };
 
   try {
     const response = await fetch("https://neuronum.net/api/list_nodes", {
@@ -258,12 +259,14 @@
     appendToLog("❌ Fetch failed: " + (err.message || "Unknown error"));
   }
 }
+  
+  const streamID = host.replace("::cell", "::stx");
 
+  function connectWebSocket() {
+    const socket = new WebSocket(`wss://neuronum.net/api/sync/${streamID}`);
 
-    function connectWebSocket() {
-      socket = new WebSocket("wss://neuronum.net/sync/neuronum::stx");
       socket.onopen = () => {
-        const payload = { host, password, synapse };
+        const stream_payload = { host, session };
         socket.send(JSON.stringify(payload));
         appendToLog(">> Sent: " + JSON.stringify(payload));
       };

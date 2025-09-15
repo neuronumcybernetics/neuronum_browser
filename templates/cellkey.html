@@ -81,7 +81,8 @@
             body: JSON.stringify({
                 host: host,
                 email: email,
-                cellkey: cellKey
+                cellkey: cellKey,
+                browser: true
             })
         });
 
@@ -89,6 +90,9 @@
             const result = await response.json();
             console.log('Verification successful:', result);
 
+            if (result.session) {
+                localStorage.setItem('session', result.session);
+            }
             if (result.synapse) {
                 localStorage.setItem('synapse', result.synapse);
             }
