@@ -453,83 +453,87 @@
                 gatewayTitle.style.marginTop = "20px";
                 nodeCard.appendChild(gatewayTitle);
 
-                filteredGateways.forEach(gateway => {
-                    const li = document.createElement("li");
-                    li.style.marginBottom = "10px";
+                // ...inside the renderNodes function...
 
-                    const btn = document.createElement("button");
-                    btn.className = "gateway-btn";
-                    btn.textContent = gateway.info;
-                    
-                    btn.addEventListener("click", async () => {
-                        const url = `https://neuronum.net/api/activate/${encodeURIComponent(gateway.id)}`;
-                        console.log(`Sending POST request to ${url}...`);
+filteredGateways.forEach(gateway => {
+    const li = document.createElement("li");
+    li.style.marginBottom = "10px";
 
-                        const publicKeyJwk = localStorage.getItem('publicKey');
-                        if (!publicKeyJwk) {
-                            console.error("No public key found in localStorage!");
-                            return;
-                        }
-                        
-                        // Dynamically create the payload data using the gateway's 'data' property
-                        const payloadData = {
-                            ...gateway.data,
-                            publicKey: JSON.parse(publicKeyJwk)
-                        };
+    const btn = document.createElement("button");
+    btn.className = "gateway-btn";
+    btn.textContent = gateway.info;
 
-                        const payload = {
-                            data: payloadData,
-                            host: host,
-                            session: session
-                        };
+    btn.addEventListener("click", async () => {
+        const url = `https://neuronum.net/api/activate/${encodeURIComponent(gateway.id)}`;
+        console.log(`Sending POST request to ${url}...`);
 
-                        try {
-                            const res = await fetch(url, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify(payload)
-                            });
+        const publicKeyJwk = localStorage.getItem('publicKey');
+        if (!publicKeyJwk) {
+            console.error("No public key found in localStorage!");
+            return;
+        }
 
-                            if (res.ok) {
-                                const data = await res.json();
-                                console.log(`Response for ${gateway.id}:`, data);
+        // Dynamically create the payload data with the 'action' key from your new config
+        // The key 'action' is now the property name, and its value is gateway.action
+        const payloadData = {
+            "action": gateway.action, // <-- This is the key change
+            "publicKey": JSON.parse(publicKeyJwk)
+        };
 
-                                showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
+        const payload = {
+            data: payloadData,
+            host: host,
+            session: session
+        };
 
-                                if (data.success && data.response) {
-                                    try {
-                                        const decrypted = await decryptPayload(data.response);
-                                        console.log("Decrypted response:", decrypted);
+        try {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
 
-                                        showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+            if (res.ok) {
+                const data = await res.json();
+                console.log(`Response for ${gateway.id}:`, data);
 
-                                        handleTxResponse(decrypted, host, session);
-                                    } catch (decryptError) {
-                                        console.error("Decryption failed:", decryptError);
-                                        showCustomAlert("Decryption Failed", decryptError.message);
-                                        handleTxResponse(null, host, session);
-                                    }
-                                } else {
-                                    console.log("No valid response data found.");
-                                    handleTxResponse(null, host, session);
-                                }
-                            } else {
-                                console.error(`Error ${res.status}: ${res.statusText}`);
-                                showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
-                                handleTxResponse(null, host, session);
-                            }
-                        } catch (err) {
-                            console.error(`Fetch error: ${err.message}`);
-                            showCustomAlert("Fetch Error", err.message);
-                            handleTxResponse(null, host, session);
-                        }
-                    });
+                showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
 
-                    li.appendChild(btn);
-                    gatewayList.appendChild(li);
-                });
+                if (data.success && data.response) {
+                    try {
+                        const decrypted = await decryptPayload(data.response);
+                        console.log("Decrypted response:", decrypted);
+
+                        showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+
+                        handleTxResponse(decrypted, host, session);
+                    } catch (decryptError) {
+                        console.error("Decryption failed:", decryptError);
+                        showCustomAlert("Decryption Failed", decryptError.message);
+                        handleTxResponse(null, host, session);
+                    }
+                } else {
+                    console.log("No valid response data found.");
+                    handleTxResponse(null, host, session);
+                }
+            } else {
+                console.error(`Error ${res.status}: ${res.statusText}`);
+                showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
+                handleTxResponse(null, host, session);
+            }
+        } catch (err) {
+            console.error(`Fetch error: ${err.message}`);
+            showCustomAlert("Fetch Error", err.message);
+            handleTxResponse(null, host, session);
+        }
+    });
+
+    li.appendChild(btn);
+    gatewayList.appendChild(li);
+});
+// ...rest of the renderNodes function...
                 nodeCard.appendChild(gatewayList);
             }
           }
