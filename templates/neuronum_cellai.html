@@ -394,7 +394,7 @@
           nodeListContainer.appendChild(p);
         }
       }
-
+      
       function renderNodes(searchTerm) {
         nodeListContainer.innerHTML = '';
 
@@ -415,11 +415,31 @@
         filteredNodes.forEach(node => {
           const nodeCard = document.createElement("div");
           nodeCard.className = "node-card";
+          
+          // --- App Metadata ---
+          if (node.config && node.config.app_metadata) {
+            const title = document.createElement("h4");
+            title.textContent = `${node.config.app_metadata.name}`;
+            nodeCard.appendChild(title);
+            const metadataDiv = document.createElement("div");
+            metadataDiv.innerHTML = `
+                <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
+                <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
+            `;
+            nodeCard.appendChild(metadataDiv);
+          }
 
-          const title = document.createElement("h4");
-          title.textContent = `${node.descr}`;
-          nodeCard.appendChild(title);
+          // --- Legals ---
+          if (node.config && node.config.legals) {
+            const legalsDiv = document.createElement("div");
+            legalsDiv.innerHTML = `
+                <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
+                <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
+            `;
+            nodeCard.appendChild(legalsDiv);
+          }
 
+          // --- Data Gateways (moved to the end) ---
           if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
             const gatewayList = document.createElement("ul");
             gatewayList.style.listStyle = "none";
@@ -427,96 +447,93 @@
 
             const filteredGateways = node.config.data_gateways.filter(gateway => gateway.id.endsWith("::tx"));
 
-            filteredGateways.forEach(gateway => {
-              const li = document.createElement("li");
-              li.style.marginBottom = "10px";
+            if (filteredGateways.length > 0) {
+                const gatewayTitle = document.createElement("h5");
+                gatewayTitle.textContent = "Actions";
+                gatewayTitle.style.marginTop = "20px";
+                nodeCard.appendChild(gatewayTitle);
 
-              const btn = document.createElement("button");
-              btn.className = "gateway-btn";
-              btn.textContent = gateway.info;
+                filteredGateways.forEach(gateway => {
+                    const li = document.createElement("li");
+                    li.style.marginBottom = "10px";
 
-              // ...
-// ...
-btn.addEventListener("click", async () => {
-    const url = `https://neuronum.net/api/activate/${encodeURIComponent(gateway.id)}`;
-    console.log(`Sending POST request to ${url}...`);
+                    const btn = document.createElement("button");
+                    btn.className = "gateway-btn";
+                    btn.textContent = gateway.info;
+                    
+                    btn.addEventListener("click", async () => {
+                        const url = `https://neuronum.net/api/activate/${encodeURIComponent(gateway.id)}`;
+                        console.log(`Sending POST request to ${url}...`);
 
-    const publicKeyJwk = localStorage.getItem('publicKey');
-    if (!publicKeyJwk) {
-        console.error("No public key found in localStorage!");
-        return;
-    }
+                        const publicKeyJwk = localStorage.getItem('publicKey');
+                        if (!publicKeyJwk) {
+                            console.error("No public key found in localStorage!");
+                            return;
+                        }
+                        
+                        // Dynamically create the payload data using the gateway's 'data' property
+                        const payloadData = {
+                            ...gateway.data,
+                            publicKey: JSON.parse(publicKeyJwk)
+                        };
 
-    const payload = {
-        data: {
-            start: "app",
-            publicKey: JSON.parse(publicKeyJwk)
-        },
-        host: host,
-        session: session
-    };
+                        const payload = {
+                            data: payloadData,
+                            host: host,
+                            session: session
+                        };
 
-    try {
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
+                        try {
+                            const res = await fetch(url, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(payload)
+                            });
 
-        if (res.ok) {
-      const data = await res.json();
-      console.log(`Response for ${gateway.id}:`, data);
+                            if (res.ok) {
+                                const data = await res.json();
+                                console.log(`Response for ${gateway.id}:`, data);
 
-      // 🔄 Replaced alert() with showCustomAlert() for encrypted data
-      showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
+                                showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
 
-      if (data.success && data.response) {
-        try {
-          const decrypted = await decryptPayload(data.response);
-          console.log("Decrypted response:", decrypted);
+                                if (data.success && data.response) {
+                                    try {
+                                        const decrypted = await decryptPayload(data.response);
+                                        console.log("Decrypted response:", decrypted);
 
-          // 🔄 Replaced alert() with showCustomAlert() for decrypted data
-          showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+                                        showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
 
-          handleTxResponse(decrypted, host, session);
-        } catch (decryptError) {
-          console.error("Decryption failed:", decryptError);
-          // 🔄 Replaced alert() with showCustomAlert() for decryption errors
-          showCustomAlert("Decryption Failed", decryptError.message);
-          handleTxResponse(null, host, session);
-        }
-      } else {
-        console.log("No valid response data found.");
-        // You could add an alert here too if needed
-        handleTxResponse(null, host, session);
-      }
-    } else {
-      console.error(`Error ${res.status}: ${res.statusText}`);
-      // 🔄 Replaced alert() with showCustomAlert() for fetch errors
-      showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
-      handleTxResponse(null, host, session);
-    }
-  } catch (err) {
-    console.error(`Fetch error: ${err.message}`);
-    // 🔄 Replaced alert() with showCustomAlert() for general errors
-    showCustomAlert("Fetch Error", err.message);
-    handleTxResponse(null, host, session);
-  }
-});
+                                        handleTxResponse(decrypted, host, session);
+                                    } catch (decryptError) {
+                                        console.error("Decryption failed:", decryptError);
+                                        showCustomAlert("Decryption Failed", decryptError.message);
+                                        handleTxResponse(null, host, session);
+                                    }
+                                } else {
+                                    console.log("No valid response data found.");
+                                    handleTxResponse(null, host, session);
+                                }
+                            } else {
+                                console.error(`Error ${res.status}: ${res.statusText}`);
+                                showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
+                                handleTxResponse(null, host, session);
+                            }
+                        } catch (err) {
+                            console.error(`Fetch error: ${err.message}`);
+                            showCustomAlert("Fetch Error", err.message);
+                            handleTxResponse(null, host, session);
+                        }
+                    });
 
-
-              li.appendChild(btn);
-              gatewayList.appendChild(li);
-            });
-            nodeCard.appendChild(gatewayList);
-          } else {
-            const p = document.createElement("p");
-            p.textContent = "(no gateways)";
-            nodeCard.appendChild(p);
+                    li.appendChild(btn);
+                    gatewayList.appendChild(li);
+                });
+                nodeCard.appendChild(gatewayList);
+            }
           }
-
+          
           nodeListContainer.appendChild(nodeCard);
         });
       }
@@ -552,25 +569,35 @@ window.addEventListener('message', async (event) => {
 
     if (message && message.type === 'iframe_request') {
         const { endpoint, data } = message;
+        console.log("Received iframe_request from child. Endpoint:", endpoint, "Data:", data);
+
         const host = localStorage.getItem('host');
         const session = localStorage.getItem('session');
         const publicKeyJwk = localStorage.getItem('publicKey');
 
+        if (!host || !session) {
+            console.error("Missing host or session in localStorage. Cannot proceed.");
+            showCustomAlert("Authentication Error", "Missing host or session data.");
+            return;
+        }
+
         if (!publicKeyJwk) {
           console.error("No public key found in localStorage!");
+          showCustomAlert("Encryption Error", "No public key found in localStorage.");
           return;
         }
 
         try {
-            // Construct the payload to be identical to the btn.addEventListener payload
+            // Construct the payload to be sent to the API
             const payload = {
                 data: {
-                    ...data, // Spreads the data from the iframe, e.g., { "ping": "node" }
-                    publicKey: JSON.parse(publicKeyJwk) // Adds the public key
+                    ...data, 
+                    publicKey: JSON.parse(publicKeyJwk)
                 },
                 host: host,
                 session: session
             };
+            console.log("Sending API request with payload:", payload);
 
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -581,31 +608,29 @@ window.addEventListener('message', async (event) => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
             }
 
             const apiResponse = await response.json();
             console.log('API call handled by parent:', apiResponse);
 
             if (apiResponse.success && apiResponse.response) {
-                // Decrypt the server's response
+                console.log("API response is successful. Proceeding with decryption.");
                 const decrypted = await decryptPayload(apiResponse.response);
                 console.log("Decrypted iframe response:", decrypted);
                 
-                // Call handleTxResponse with the decrypted data
                 handleTxResponse(decrypted, host, session);
 
-                // Send the decrypted data back to the iframe
                 const iframe = document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({
                         type: 'api_response',
                         data: decrypted
-                    }, '*'); // Or better, use a specific origin for security
+                    }, '*');
                 }
             } else {
-                console.log("No valid response data found.");
-                // Call handleTxResponse with null data to clear the screen
+                console.log("API response was not successful or did not contain a valid payload.");
                 handleTxResponse(null, host, session);
 
                 const iframe = document.querySelector('iframe');
@@ -618,7 +643,7 @@ window.addEventListener('message', async (event) => {
             }
         } catch (error) {
             console.error('API request failed in parent:', error);
-            // Call handleTxResponse with null data to clear the screen on error
+            showCustomAlert("API Request Failed", `An error occurred: ${error.message}`);
             handleTxResponse(null, host, session);
 
             const iframe = document.querySelector('iframe');
@@ -631,6 +656,7 @@ window.addEventListener('message', async (event) => {
         }
     }
 });
+
 
 
 // Function to show the custom alert modal
