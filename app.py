@@ -32,7 +32,7 @@ def neuronum_cellai():
 
 def run_flask():
     # Run flask app (with no debug and on localhost)
-    server.run(host='127.0.0.1', port=5000, debug=False)
+    server.run(host='127.0.0.1', port=55000, debug=False)
 
 if __name__ == '__main__':
     # Run flask in a separate thread so webview can start after server is ready
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     webview.create_window(
     'Neuronum CELLai v1.0.2',
-    'http://127.0.0.1:5000',
+    'http://127.0.0.1:55000',
     width=1280,
     height=800,
     resizable=True  # Optional: allow resizing

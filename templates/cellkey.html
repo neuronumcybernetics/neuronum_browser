@@ -87,27 +87,46 @@
         });
 
         if (response.ok) {
-            const result = await response.json();
-            console.log('Verification successful:', result);
+        const result = await response.json();
+        console.log('Verification successful:', result);
 
-            if (result.session) {
-                localStorage.setItem('session', result.session);
-            }
-            if (result.synapse) {
-                localStorage.setItem('synapse', result.synapse);
-            }
-
-            window.location.href = '/neuronum_cellai';
-        } else {
-            const error = await response.json();
-            console.error('Verification failed:', error);
-            alert(error.message || "Verification failed. Please check your cell key.");
+        if (result.session) {
+            localStorage.setItem('session', result.session);
         }
-    } catch (err) {
-        console.error("Error submitting form:", err);
-        alert("An error occurred while verifying the cell key.");
-    }
-});
+        if (result.synapse) {
+            localStorage.setItem('synapse', result.synapse);
+        }
+
+              // Generate key pair using Web Crypto API for ECDH
+        const keyPair = await window.crypto.subtle.generateKey(
+            {
+                name: "ECDH",
+                namedCurve: "P-256",
+            },
+            true, // extractable
+            ["deriveKey", "deriveBits"] // key usages for ECDH
+        );
+
+        // Export keys to JSON Web Key (JWK) format for storage
+        const privateKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+        const publicKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+        // Store in localStorage (you can also use IndexedDB for more secure storage)
+        localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
+        localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
+
+        // Redirect after successful login and key generation
+        window.location.href = '/neuronum_cellai';
+            } else {
+                const error = await response.json();
+                console.error('Verification failed:', error);
+                alert(error.message || "Verification failed. Please check your cell key.");
+            }
+        } catch (err) {
+            console.error("Error submitting form:", err);
+            alert("An error occurred while verifying the cell key.");
+        }
+    });
 
 </script>
 
