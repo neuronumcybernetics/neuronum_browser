@@ -285,15 +285,6 @@
   const iframe = document.createElement("iframe");
   htmlOutput.appendChild(iframe);
 
-  // Wait for iframe to be ready
-  iframe.onload = () => {
-    const iframeWindow = iframe.contentWindow;
-
-    // Set global variables directly
-    iframeWindow.CLIENT_CELL = host;
-    iframeWindow.CLIENT_SESSION = session;
-  };
-
   // Write the HTML content to the iframe's document
   const iframeDoc = iframe.contentWindow.document;
   iframeDoc.open();
