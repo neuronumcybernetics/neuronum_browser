@@ -395,29 +395,33 @@
         }
       }
       
-      function renderNodes(searchTerm) {
-        nodeListContainer.innerHTML = '';
+     function renderNodes(searchTerm) {
+    nodeListContainer.innerHTML = '';
 
-        const filteredNodes = allNodes.filter(node => {
-          const nodeDescription = node.descr.toLowerCase();
-          const gatewayInfo = (node.config?.data_gateways || []).map(g => g.info.toLowerCase()).join(' ');
-          const fullText = `${nodeDescription} ${gatewayInfo}`;
-          return fullText.includes(searchTerm);
-        });
-        
-        if (filteredNodes.length === 0) {
-          const p = document.createElement("p");
-          p.textContent = "No nodes found matching your search.";
-          nodeListContainer.appendChild(p);
-          return;
-        }
+    const filteredNodes = allNodes.filter(node => {
+        const nodeDescription = node.descr.toLowerCase();
+        // Updated to search through the new nested 'actions' array
+        const gatewayInfo = (node.config?.data_gateways || [])
+            .flatMap(g => g.actions || [])
+            .map(a => a.info.toLowerCase())
+            .join(' ');
+        const fullText = `${nodeDescription} ${gatewayInfo}`;
+        return fullText.includes(searchTerm);
+    });
 
-        filteredNodes.forEach(node => {
-          const nodeCard = document.createElement("div");
-          nodeCard.className = "node-card";
-          
-          // --- App Metadata ---
-          if (node.config && node.config.app_metadata) {
+    if (filteredNodes.length === 0) {
+        const p = document.createElement("p");
+        p.textContent = "No nodes found matching your search.";
+        nodeListContainer.appendChild(p);
+        return;
+    }
+
+    filteredNodes.forEach(node => {
+        const nodeCard = document.createElement("div");
+        nodeCard.className = "node-card";
+
+        // --- App Metadata ---
+        if (node.config && node.config.app_metadata) {
             const title = document.createElement("h4");
             title.textContent = `${node.config.app_metadata.name}`;
             nodeCard.appendChild(title);
@@ -427,120 +431,119 @@
                 <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
             `;
             nodeCard.appendChild(metadataDiv);
-          }
+        }
 
-          // --- Legals ---
-          if (node.config && node.config.legals) {
+        // --- Legals ---
+        if (node.config && node.config.legals) {
             const legalsDiv = document.createElement("div");
             legalsDiv.innerHTML = `
                 <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
                 <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
             `;
             nodeCard.appendChild(legalsDiv);
-          }
+        }
 
-          // --- Data Gateways (moved to the end) ---
-          if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
+        // --- Data Gateways with Actions ---
+        if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
             const gatewayList = document.createElement("ul");
             gatewayList.style.listStyle = "none";
             gatewayList.style.paddingLeft = "0";
 
-            const filteredGateways = node.config.data_gateways.filter(gateway => gateway.id.endsWith("::tx"));
+            // Loop through each gateway object
+            node.config.data_gateways.forEach(gateway => {
+                const gatewayID = gateway.id;
 
-            if (filteredGateways.length > 0) {
-                const gatewayTitle = document.createElement("h5");
-                gatewayTitle.textContent = "Actions";
-                gatewayTitle.style.marginTop = "20px";
-                nodeCard.appendChild(gatewayTitle);
+                // Check for the "::tx" suffix and if there are actions
+                if (gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
+                    const gatewayTitle = document.createElement("h5");
+                    gatewayTitle.textContent = "Actions";
+                    gatewayTitle.style.marginTop = "20px";
+                    nodeCard.appendChild(gatewayTitle);
 
-                // ...inside the renderNodes function...
+                    // Loop through the actions array for each gateway
+                    gateway.actions.forEach(actionItem => {
+                        const li = document.createElement("li");
+                        li.style.marginBottom = "10px";
 
-filteredGateways.forEach(gateway => {
-    const li = document.createElement("li");
-    li.style.marginBottom = "10px";
+                        const btn = document.createElement("button");
+                        btn.className = "gateway-btn";
+                        btn.textContent = actionItem.info;
 
-    const btn = document.createElement("button");
-    btn.className = "gateway-btn";
-    btn.textContent = gateway.info;
+                        btn.addEventListener("click", async () => {
+                            const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
+                            console.log(`Sending POST request to ${url}...`);
 
-    btn.addEventListener("click", async () => {
-        const url = `https://neuronum.net/api/activate/${encodeURIComponent(gateway.id)}`;
-        console.log(`Sending POST request to ${url}...`);
+                            const publicKeyJwk = localStorage.getItem('publicKey');
+                            if (!publicKeyJwk) {
+                                console.error("No public key found in localStorage!");
+                                return;
+                            }
 
-        const publicKeyJwk = localStorage.getItem('publicKey');
-        if (!publicKeyJwk) {
-            console.error("No public key found in localStorage!");
-            return;
-        }
+                            // The payload is now dynamically created from the action object
+                            const payloadData = {
+                                "action": actionItem.action,
+                                "publicKey": JSON.parse(publicKeyJwk)
+                            };
 
-        // Dynamically create the payload data with the 'action' key from your new config
-        // The key 'action' is now the property name, and its value is gateway.action
-        const payloadData = {
-            "action": gateway.action, // <-- This is the key change
-            "publicKey": JSON.parse(publicKeyJwk)
-        };
+                            const payload = {
+                                data: payloadData,
+                                host: host,
+                                session: session
+                            };
 
-        const payload = {
-            data: payloadData,
-            host: host,
-            session: session
-        };
+                            try {
+                                const res = await fetch(url, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify(payload)
+                                });
 
-        try {
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                console.log(`Response for ${gateway.id}:`, data);
-
-                showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
-
-                if (data.success && data.response) {
-                    try {
-                        const decrypted = await decryptPayload(data.response);
-                        console.log("Decrypted response:", decrypted);
-
-                        showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
-
-                        handleTxResponse(decrypted, host, session);
-                    } catch (decryptError) {
-                        console.error("Decryption failed:", decryptError);
-                        showCustomAlert("Decryption Failed", decryptError.message);
-                        handleTxResponse(null, host, session);
-                    }
-                } else {
-                    console.log("No valid response data found.");
-                    handleTxResponse(null, host, session);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    console.log(`Response for ${gatewayID}:`, data);
+                                    showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
+                                    if (data.success && data.response) {
+                                        try {
+                                            const decrypted = await decryptPayload(data.response);
+                                            console.log("Decrypted response:", decrypted);
+                                            showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+                                            handleTxResponse(decrypted, host, session);
+                                        } catch (decryptError) {
+                                            console.error("Decryption failed:", decryptError);
+                                            showCustomAlert("Decryption Failed", decryptError.message);
+                                            handleTxResponse(null, host, session);
+                                        }
+                                    } else {
+                                        console.log("No valid response data found.");
+                                        handleTxResponse(null, host, session);
+                                    }
+                                } else {
+                                    console.error(`Error ${res.status}: ${res.statusText}`);
+                                    showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
+                                    handleTxResponse(null, host, session);
+                                }
+                            } catch (err) {
+                                console.error(`Fetch error: ${err.message}`);
+                                showCustomAlert("Fetch Error", err.message);
+                                handleTxResponse(null, host, session);
+                            }
+                        });
+                        li.appendChild(btn);
+                        gatewayList.appendChild(li);
+                    });
                 }
-            } else {
-                console.error(`Error ${res.status}: ${res.statusText}`);
-                showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
-                handleTxResponse(null, host, session);
-            }
-        } catch (err) {
-            console.error(`Fetch error: ${err.message}`);
-            showCustomAlert("Fetch Error", err.message);
-            handleTxResponse(null, host, session);
+            });
+            nodeCard.appendChild(gatewayList);
+        } else {
+            const p = document.createElement("p");
+            p.textContent = "(no gateways)";
+            nodeCard.appendChild(p);
         }
+        nodeListContainer.appendChild(nodeCard);
     });
-
-    li.appendChild(btn);
-    gatewayList.appendChild(li);
-});
-// ...rest of the renderNodes function...
-                nodeCard.appendChild(gatewayList);
-            }
-          }
-          
-          nodeListContainer.appendChild(nodeCard);
-        });
-      }
+}
     };
 
     // Fullscreen toggle
