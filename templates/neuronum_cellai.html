@@ -62,7 +62,7 @@
       top: 20px;
       left: 20px;
       right: 20px;
-      bottom: 150px;
+      bottom: 20px;
       display: grid;
       grid-template-columns: 300px 1fr; /* First column fixed, second fills space */
       grid-template-rows: auto 1fr; /* First row auto-sized, second fills rest of height */
@@ -79,6 +79,7 @@
     .cell-stx-card {
       grid-column: 1;
       grid-row: 3;
+      overflow-y: auto; /* Added to make the stx card scrollable */
     }
 
     .node-list-card {
@@ -110,6 +111,16 @@
     }
 
     .node-screen-card::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Hides the scrollbar for the stx card */
+    .cell-stx-card {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .cell-stx-card::-webkit-scrollbar {
       display: none;
     }
 
@@ -232,6 +243,61 @@
   width: 100%;
   height: 100%;
 }
+/* New style for the stream output */
+#stx-data {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 160px; /* New: Set a max height for the container */
+    overflow-y: auto; /* New: Make it scrollable vertically */
+}
+
+  #stx-data {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    #stx-data::-webkit-scrollbar {
+      display: none;
+    }
+
+/* New CSS for a single notification card */
+.notification-card {
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    word-wrap: break-word;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #eaeaea;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.notification-title {
+    margin: 0 0 5px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #01c07d; /* Highlighted color for the title */
+}
+
+.notification-message {
+    margin: 0 0 10px;
+    opacity: 0.9;
+}
+
+.notification-time {
+    font-size: 12px;
+    opacity: 0.6;
+    display: block;
+    text-align: right;
+}
   </style>
 </head>
 <body class="pageContainer">
@@ -264,9 +330,8 @@
       <div id="node-list-screen" class="node-list-container"></div>
     </div>
     <div class="bento-card cell-stx-card">
-      <h3>Stream STX</h3>
-      <a href="#" id="open-stx">open stx →</a>
-      <button id="close-stx-btn" style="display: none;">Close STX</button>
+      <h3>Notifications</h3>
+      <div id="stx-data"></div>
     </div>
   </div>
 
@@ -795,9 +860,7 @@ async function decryptPayload(encryptedPayload) {
 let stxSocket = null;
 
 // Get the HTML elements
-const openStxLink = document.getElementById("open-stx");
-const closeStxBtn = document.getElementById("close-stx-btn");
-const htmlOutput = document.getElementById("html-output");
+const stxDataElement = document.getElementById("stx-data");
 
 // Function to handle opening the WebSocket connection
 function openStx() {
@@ -805,25 +868,21 @@ function openStx() {
   const session = localStorage.getItem('session');
 
   if (!host || !session) {
-    showCustomAlert("Connection Error", "Missing host or session data. Please connect your cell first.");
     return;
   }
 
   if (stxSocket && stxSocket.readyState === WebSocket.OPEN) {
-    showCustomAlert("Info", "A stream is already open.");
     return;
   }
 
   const stxId = host.replace('::cell', '::stx');
-  const stxUrl = `wss://neuronum.net/api/sync/${stxId}`; // Using the correct host variable
+  const stxUrl = `wss://neuronum.net/api/sync/${stxId}`;
 
-  showCustomAlert("Connecting...", `Connecting to Stream ${stxId}`);
   console.log("Attempting to connect to:", stxUrl);
 
   try {
     stxSocket = new WebSocket(stxUrl);
   } catch (error) {
-    showCustomAlert("Connection Failed", `Failed to create WebSocket: ${error.message}`);
     console.error("Failed to create WebSocket:", error);
     return;
   }
@@ -831,8 +890,6 @@ function openStx() {
   stxSocket.onopen = function(event) {
     console.log("WebSocket connection established.");
     showCustomAlert("Connected", "Stream STX WebSocket connection established successfully.");
-    openStxLink.style.display = 'none'; // Hide the 'open' button
-    closeStxBtn.style.display = 'inline-block'; // Show the 'close' button
 
     const authPayload = {
       host: host,
@@ -845,30 +902,56 @@ function openStx() {
   stxSocket.onmessage = function(event) {
     console.log("Received data from stream:", event.data);
     
-    // Clear previous content
-    htmlOutput.innerHTML = "";
+    // Parse the received JSON data
+    try {
+        const notification = JSON.parse(event.data);
+        if (notification.label === 'notification') {
+            // Create a new notification card element
+            const card = document.createElement("div");
+            card.className = "notification-card";
 
-    // Create a <pre> element to format and display the raw text data
-    const pre = document.createElement("pre");
-    pre.textContent = event.data;
+            // Create and append the title
+            const title = document.createElement("h4");
+            title.className = "notification-title";
+            title.textContent = notification.title || "Notification";
+            card.appendChild(title);
 
-    // Append a heading and the new data to the output card
-    const heading = document.createElement("h4");
-    heading.textContent = "Raw Stream Data";
-    htmlOutput.appendChild(heading);
-    htmlOutput.appendChild(pre);
+            // Create and append the message
+            const message = document.createElement("p");
+            message.className = "notification-message";
+            message.textContent = notification.message || "No message content.";
+            card.appendChild(message);
 
-    // Optional: Scroll to the bottom to see the latest data
-    htmlOutput.scrollTop = htmlOutput.scrollHeight;
+            // Create and append the timestamp
+            const time = document.createElement("span");
+            time.className = "notification-time";
+            time.textContent = notification.time || new Date().toLocaleString();
+            card.appendChild(time);
+            
+            // Append the new card to the top of the container
+            stxDataElement.prepend(card);
+        } else {
+            // If it's not a notification, just display the raw data as a fallback
+            const fallback = document.createElement("div");
+            fallback.textContent = event.data;
+            stxDataElement.prepend(fallback);
+        }
+    } catch (e) {
+        console.error("Failed to parse JSON message:", e);
+        const fallback = document.createElement("div");
+        fallback.textContent = `Error processing message: ${event.data}`;
+        stxDataElement.prepend(fallback);
+    }
   };
 
   stxSocket.onclose = function(event) {
     console.log("WebSocket connection closed:", event);
     const reason = event.reason || "No reason given.";
     showCustomAlert("Connection Closed", `Stream STX WebSocket connection closed.\nCode: ${event.code}\nReason: ${reason}`);
-    openStxLink.style.display = 'inline-block'; // Show the 'open' button
-    closeStxBtn.style.display = 'none'; // Hide the 'close' button
-    stxSocket = null; // Clear the socket reference
+    stxSocket = null;
+    
+    // Automatically attempt to reconnect after a delay
+    setTimeout(openStx, 5000); 
   };
 
   stxSocket.onerror = function(error) {
@@ -877,25 +960,11 @@ function openStx() {
   };
 }
 
-// Function to handle closing the WebSocket connection
-function closeStx() {
-  if (stxSocket) {
-    stxSocket.close();
-  } else {
-    showCustomAlert("Info", "No active stream to close.");
-  }
-}
-
-// Event listeners for the buttons
-openStxLink.addEventListener("click", (e) => {
-  e.preventDefault();
+// Call openStx on page load to establish the connection immediately
+window.addEventListener("load", () => {
   openStx();
 });
 
-closeStxBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  closeStx();
-});
   </script>
 </body>
 </html>
