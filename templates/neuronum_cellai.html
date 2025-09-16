@@ -592,6 +592,9 @@ window.addEventListener('message', async (event) => {
                 const decrypted = await decryptPayload(apiResponse.response);
                 console.log("Decrypted iframe response:", decrypted);
                 
+                // Call handleTxResponse with the decrypted data
+                handleTxResponse(decrypted, host, session);
+
                 // Send the decrypted data back to the iframe
                 const iframe = document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
@@ -602,6 +605,9 @@ window.addEventListener('message', async (event) => {
                 }
             } else {
                 console.log("No valid response data found.");
+                // Call handleTxResponse with null data to clear the screen
+                handleTxResponse(null, host, session);
+
                 const iframe = document.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({
@@ -612,6 +618,9 @@ window.addEventListener('message', async (event) => {
             }
         } catch (error) {
             console.error('API request failed in parent:', error);
+            // Call handleTxResponse with null data to clear the screen on error
+            handleTxResponse(null, host, session);
+
             const iframe = document.querySelector('iframe');
             if (iframe && iframe.contentWindow) {
                 iframe.contentWindow.postMessage({
