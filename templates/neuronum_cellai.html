@@ -333,49 +333,6 @@
         cellHostSpan.textContent = 'cell not connected';
       }
 
-      const streamID = host?.replace("::cell", "::stx");
-      
-      // Re-add WebSocket to handle future updates
-      let reconnectInterval;
-      const reconnectDelay = 5000;
-
-      function connectWebSocket() {
-        clearTimeout(reconnectInterval);
-        const wsURL = `wss://neuronum.net/api/sync/${streamID}`;
-        const socket = new WebSocket(wsURL);
-
-        socket.onopen = () => {
-          console.log("✅ WebSocket Connected");
-        };
-
-        socket.onclose = (event) => {
-          console.log(`🔌 WebSocket Disconnected. Code: ${event.code}, Reason: ${event.reason}`);
-          reconnectInterval = setTimeout(connectWebSocket, reconnectDelay);
-        };
-
-        socket.onerror = (err) => {
-          console.error("WebSocket error:", err);
-        };
-
-        socket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.label === "tx_response") {
-              // Pass host and session to the handleTxResponse function
-              handleTxResponse(data.data || {}, host, session);
-            }
-          } catch (e) {
-            console.error("Invalid JSON in message:", e);
-          }
-        };
-      }
-
-      if (host && session) {
-        connectWebSocket();
-      } else {
-        console.error("Missing Host or Session");
-      }
-
       const disconnectBtn = document.getElementById("disconnect-btn");
       if (disconnectBtn) {
         disconnectBtn.addEventListener("click", () => {
@@ -584,7 +541,7 @@ if (fullscreenToggle && nodeScreenCard) {
   });
 }
 
-window.addEventListener('message', (event) => {
+window.addEventListener('message', async (event) => {
     // ⚠️ Security check: Always verify the origin
     if (event.origin !== 'http://127.0.0.1:55000') {
         console.error('Message received from an unauthorized origin:', event.origin);
@@ -593,42 +550,76 @@ window.addEventListener('message', (event) => {
 
     const message = event.data;
 
-    // Check the message type to handle it appropriately
     if (message && message.type === 'iframe_request') {
         const { endpoint, data } = message;
         const host = localStorage.getItem('host');
         const session = localStorage.getItem('session');
+        const publicKeyJwk = localStorage.getItem('publicKey');
 
-        const payload = {
-            data: data,
-            host: host,
-            session: session
-        };
+        if (!publicKeyJwk) {
+          console.error("No public key found in localStorage!");
+          return;
+        }
 
-        fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
+        try {
+            // Construct the payload to be identical to the btn.addEventListener payload
+            const payload = {
+                data: {
+                    ...data, // Spreads the data from the iframe, e.g., { "ping": "node" }
+                    publicKey: JSON.parse(publicKeyJwk) // Adds the public key
+                },
+                host: host,
+                session: session
+            };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.json();
-        })
-        .then(apiResponse => {
+
+            const apiResponse = await response.json();
             console.log('API call handled by parent:', apiResponse);
-            // You can optionally send a message back to the iframe with the response
-            // or handle the UI update on the parent page itself.
+
             if (apiResponse.success && apiResponse.response) {
-                 handleTxResponse(apiResponse.response, host, session);
+                // Decrypt the server's response
+                const decrypted = await decryptPayload(apiResponse.response);
+                console.log("Decrypted iframe response:", decrypted);
+                
+                // Send the decrypted data back to the iframe
+                const iframe = document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        type: 'api_response',
+                        data: decrypted
+                    }, '*'); // Or better, use a specific origin for security
+                }
+            } else {
+                console.log("No valid response data found.");
+                const iframe = document.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        type: 'api_response_error',
+                        message: 'No valid response data found.'
+                    }, '*');
+                }
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('API request failed in parent:', error);
-        });
+            const iframe = document.querySelector('iframe');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'api_response_error',
+                    message: `API request failed: ${error.message}`
+                }, '*');
+            }
+        }
     }
 });
 
