@@ -867,8 +867,8 @@ function openStx() {
 
   if (stxSocket && stxSocket.readyState === WebSocket.OPEN) return;
 
-
-  const stxUrl = `wss://neuronum.net/api/sync/private`;
+  const stxId = host.replace('::cell', '::stx');
+  const stxUrl = `wss://neuronum.net/api/sync/${stxId}`;
 
   console.log("Attempting to connect to:", stxUrl);
 
