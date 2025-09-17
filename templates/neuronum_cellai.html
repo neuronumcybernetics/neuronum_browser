@@ -855,7 +855,7 @@ async function decryptPayload(encryptedPayload) {
 // A variable to hold the WebSocket connection
 let stxSocket = null;
 
-// Get the HTML elements
+// Get the HTML element
 const stxDataElement = document.getElementById("stx-data");
 
 // Function to handle opening the WebSocket connection
@@ -863,13 +863,9 @@ function openStx() {
   const host = localStorage.getItem('host');
   const session = localStorage.getItem('session');
 
-  if (!host || !session) {
-    return;
-  }
+  if (!host || !session) return;
 
-  if (stxSocket && stxSocket.readyState === WebSocket.OPEN) {
-    return;
-  }
+  if (stxSocket && stxSocket.readyState === WebSocket.OPEN) return;
 
   const stxId = host.replace('::cell', '::stx');
   const stxUrl = `wss://neuronum.net/api/sync/${stxId}`;
@@ -883,7 +879,7 @@ function openStx() {
     return;
   }
 
-  stxSocket.onopen = function(event) {
+  stxSocket.onopen = function () {
     console.log("WebSocket connection established.");
     showCustomAlert("Connected", "Stream STX WebSocket connection established successfully.");
 
@@ -895,66 +891,56 @@ function openStx() {
     console.log("Sent initial authentication payload.");
   };
 
-  stxSocket.onmessage = function(event) {
-    console.log("Received data from stream:", event.data);
-    
-    // Parse the received JSON data
+  stxSocket.onmessage = function (event) {
     try {
-        const notification = JSON.parse(event.data);
-        if (notification.label === 'notification') {
-            // Create a new notification card element
-            const card = document.createElement("div");
-            card.className = "notification-card";
+      const notification = JSON.parse(event.data);
 
-            // Create and append the title
-            const title = document.createElement("h4");
-            title.className = "notification-title";
-            title.textContent = notification.title || "Notification";
-            card.appendChild(title);
+      // Only process messages with label "notification"
+      if (notification.label === 'notification') {
+        // Create a new notification card element
+        const card = document.createElement("div");
+        card.className = "notification-card";
 
-            // Create and append the message
-            const message = document.createElement("p");
-            message.className = "notification-message";
-            message.textContent = notification.message || "No message content.";
-            card.appendChild(message);
+        const title = document.createElement("h4");
+        title.className = "notification-title";
+        title.textContent = notification.title || "Notification";
+        card.appendChild(title);
 
-            // Create and append the timestamp
-            const time = document.createElement("span");
-            time.className = "notification-time";
-            time.textContent = notification.time || new Date().toLocaleString();
-            card.appendChild(time);
-            
-            // Append the new card to the top of the container
-            stxDataElement.prepend(card);
-        } else {
-            // If it's not a notification, just display the raw data as a fallback
-            const fallback = document.createElement("div");
-            fallback.textContent = event.data;
-            stxDataElement.prepend(fallback);
-        }
+        const message = document.createElement("p");
+        message.className = "notification-message";
+        message.textContent = notification.message || "No message content.";
+        card.appendChild(message);
+
+        const time = document.createElement("span");
+        time.className = "notification-time";
+        time.textContent = notification.time || new Date().toLocaleString();
+        card.appendChild(time);
+
+        stxDataElement.prepend(card);
+      }
+
+      // If not a "notification", do nothing
     } catch (e) {
-        console.error("Failed to parse JSON message:", e);
-        const fallback = document.createElement("div");
-        fallback.textContent = `Error processing message: ${event.data}`;
-        stxDataElement.prepend(fallback);
+      console.error("Failed to parse WebSocket message:", e);
     }
   };
 
-  stxSocket.onclose = function(event) {
+  stxSocket.onclose = function (event) {
     console.log("WebSocket connection closed:", event);
     const reason = event.reason || "No reason given.";
     showCustomAlert("Connection Closed", `Stream STX WebSocket connection closed.\nCode: ${event.code}\nReason: ${reason}`);
     stxSocket = null;
-    
+
     // Automatically attempt to reconnect after a delay
-    setTimeout(openStx, 5000); 
+    setTimeout(openStx, 5000);
   };
 
-  stxSocket.onerror = function(error) {
+  stxSocket.onerror = function (error) {
     console.error("WebSocket error:", error);
     showCustomAlert("WebSocket Error", "An error occurred with the stream connection. See console for details.");
   };
 }
+
 
 // Call openStx on page load to establish the connection immediately
 window.addEventListener("load", () => {
