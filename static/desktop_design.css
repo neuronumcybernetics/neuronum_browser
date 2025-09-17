@@ -407,7 +407,7 @@
       border: 1px solid #ffffff;
     }
 
-    .key-input-container {          /* Enable flexbox on the container */   /* Horizontally center the input */     /* Vertically center the input */
+    .key-input-container { 
       border-radius: 30px;
       transition: all 400ms;
       margin-top: 20px; 
@@ -459,7 +459,6 @@
       text-decoration: underline;
     }
 
-    /* New CSS for the main content container using CSS Grid */
     .main-grid-layout {
       position: fixed;
       top: 20px;
@@ -467,22 +466,20 @@
       right: 20px;
       bottom: 20px;
       display: grid;
-      grid-template-columns: 300px 1fr; /* First column fixed, second fills space */
-      grid-template-rows: auto 1fr; /* First row auto-sized, second fills rest of height */
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: auto 1fr;
       gap: 20px;
     }
 
-    /* Grid item placement */
     .cell-id-card {
       grid-column: 1;
       grid-row: 1;
     }
 
-     /* Grid item placement */
     .cell-stx-card {
       grid-column: 1;
       grid-row: 3;
-      overflow-y: auto; /* Added to make the stx card scrollable */
+      overflow-y: auto;
     }
 
     .node-list-card {
@@ -493,12 +490,11 @@
 
     .node-screen-card {
       grid-column: 2;
-      grid-row: 1 / span 3; /* This makes the card span both rows */
+      grid-row: 1 / span 3;
       overflow-y: auto;
       padding: 0;
     }
 
-    /* Hides the scrollbar for the node list card */
     .node-list-card {
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -517,7 +513,6 @@
       display: none;
     }
     
-    /* Hides the scrollbar for the stx card */
     .cell-stx-card {
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -561,7 +556,6 @@
       gap: 18px;
     }
 
-    /* CSS for the search bar */
     .search-container {
       margin-top: 10px;
       margin-bottom: 20px;
@@ -580,7 +574,6 @@
       border: 1px solid #333;
     }
 
-    /* New CSS for the "no app selected" state */
     .no-app-selected {
       display: flex;
       flex-direction: column;
@@ -597,7 +590,6 @@
       margin-bottom: -5px;
     }
 
-    /* Style for the iframe container */
     #html-output iframe {
       width: 100%;
       height: 100%;
@@ -606,22 +598,21 @@
     }
 
 
-/* Fullscreen layout override */
-.node-screen-card.fullscreen {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10000;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  border-radius: 0;
-  padding: 0;
-  box-shadow: none;
-  background-color: #111; /* optional: darken bg */
-}
+    .node-screen-card.fullscreen {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10000;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      background-color: #111;
+    }
 
     .fullscreen-button {
       position: fixed;
@@ -650,19 +641,20 @@
     }
 
 
-.node-screen-card.fullscreen iframe {
-  width: 100%;
-  height: 100%;
-}
-/* New style for the stream output */
-#stx-data {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 160px; /* New: Set a max height for the container */
-    overflow-y: auto; /* New: Make it scrollable vertically */
-}
+    .node-screen-card.fullscreen iframe {
+      width: 100%;
+      height: 100%;
+    }
+
+
+    #stx-data {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 160px;
+        overflow-y: auto;
+    }
 
   #stx-data {
       -ms-overflow-style: none;
@@ -673,39 +665,46 @@
       display: none;
     }
 
-/* New CSS for a single notification card */
-.notification-card {
-    background-color: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px;
-    word-wrap: break-word;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    color: #eaeaea;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+    .notification-card {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 15px;
+        word-wrap: break-word;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        color: #eaeaea;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
 
-.notification-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
+    .notification-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
 
-.notification-title {
-    margin: 0 0 5px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #01c07d; /* Highlighted color for the title */
-}
+    .notification-title {
+        margin: 0 0 5px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #01c07d;
+    }
 
-.notification-message {
-    margin: 0 0 10px;
-    opacity: 0.9;
-}
+    .notification-message {
+        margin: 0 0 10px;
+        opacity: 0.9;
+    }
 
-.notification-time {
-    font-size: 12px;
-    opacity: 0.6;
-    display: block;
-    text-align: right;
-}
+    .notification-time {
+        font-size: 12px;
+        opacity: 0.6;
+        display: block;
+        text-align: right;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    i {
+      text-decoration: none;
+    }
