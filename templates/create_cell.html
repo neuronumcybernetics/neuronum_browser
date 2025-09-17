@@ -1,148 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta name="description" content="Create your Neuronum Cell and start interacting with the network">
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="max-image-preview: none">
-  <title>Create Community Cell</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neuronum: The Real-Time E2E Browser</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
-  <link rel="stylesheet" href="/static/mobile_design.css">
-  <link rel="stylesheet" href="/static/tablet_design.css">
-  <link rel="stylesheet" href="/static/desktop_design.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/desktop_design.css">
 </head>
 
-  <body class="pageContainer">
+<body class="page-ontainer">
 
-    <div class="socials desktop">
-      <a href="https://www.github.com/neuronumcybernetics" target="_blank"><i class="fa-brands fa-github"></i></a>&nbsp;
-    </div>
+  <div class="github-icon">
+    <a href="https://www.github.com/neuronumcybernetics" target="_blank">
+      <i class="fa-brands fa-github"></i>
+    </a>&nbsp;
+  </div>
 
-    <div class="connectContainer">
-      <div class="connector">
-        <div class="txTitle">CREATE CELL</div>
-        <div class="placeTransmitterLogoSmall">
-          <img src="/static/logo.png" class="transmitterLogoSmall">
-        </div>
-        <div class="txID">create community cell</div>
-    
-        <form id="createCellForm" action="/createCommunityCell" method="post" enctype="multipart/form-data">
-          <div class="createInputContainer">
-            <br class="desktop"><br class="desktop">
-            <input class="createInput" type="email" id="email" name="email" style="color: white;" placeholder="Email Address" required>
-            
-            <div class="input-container">
-              <input class="createInput" type="password" id="password" name="password" style="color: white;" placeholder="Create Password" required>
-              <button type="button" id="togglePassword"><i class="fa-solid fa-eye-slash"></i></button>
-            </div>
-           
+  <div class="create-container">
+    <div class="connect-card">
+      <div class="card-title">CREATE CELL</div>
+      
+      <div class="card-logo-place">
+        <img src="/static/logo.png" class="card-logo">
+      </div>
+
+      <div class="card-meta">create community cell</div>
+
+      <form id="createCellForm" action="/createCommunityCell" method="post" enctype="multipart/form-data">
+        <div class="connect-input-container">
+          <input
+            class="connect-input"
+            type="email"
+            id="email"
+            name="email"
+            style="color: white;"
+            placeholder="Email Address"
+            required
+          >
+
+          <div class="input-container">
+            <input
+              class="create-cell-input"
+              type="password"
+              id="password"
+              name="password"
+              style="color: white;"
+              placeholder="Create Password"
+              required
+            >
+            <button type="button" id="togglePassword">
+              <i class="fa-solid fa-eye-slash"></i>
+            </button>
           </div>
-        
-          <div class="useCaseMetaTerms">
-            <label for="acceptTerms">
-              <input type="checkbox" id="acceptTerms" name="acceptTerms" value="yes" class="checkbox" required>
-              <span class="custom-checkbox"></span>
-              <span class="desktop">agree to the <a style="color: #00b35f;" href="/legals">Terms & Conditions</a> and <a style="color: #00b35f;" href="/legals">Privacy Policy</a></span>
-              <span class="mobile">Accept <a class="legalslink" style="color: #00b35f;" href="/legals">Legals</a></span>  
-            </label>
-            </div>
-          <button type="button" id="createCommunityCell" class="uploadButton">create cell</button>
-        </form>
-        
-      </div>
+        </div>
 
-      <div class="footerContainer">
-        <a href="/" class="backButton">
-          <i class="fas fa-long-arrow-alt-left"></i>
-        </a>
-      <div class="fixedFooter">
-        <a href="/"><img src="/static/logo.png" alt="Neuronum Logo - A Cyber Neuron" class="headerLogo" ></a>
-        <a class="footerMail" href="mailto:welcome@neuronum.net">welcome@neuronum.net</a>
-      </div>
+        <div class="terms-container">
+          <label for="acceptTerms">
+            <input
+              type="checkbox"
+              id="acceptTerms"
+              name="acceptTerms"
+              value="yes"
+              class="checkbox"
+              required
+            >
+            <span class="custom-checkbox"></span>
+            <span>
+              agree to the
+              <a style="color: #00b35f;" href="/legals">Terms & Conditions</a>
+              and
+              <a style="color: #00b35f;" href="/legals">Privacy Policy</a>
+            </span>
+          </label>
+        </div>
+
+        <button type="button" id="createCommunityCell" class="submit-button">create cell</button>
+      </form>
     </div>
 
+    <div class="footer-container">
+      <a href="/" class="back-button">
+        <i class="fas fa-long-arrow-alt-left"></i>
+      </a>
 
-    <script>
-document.getElementById('createCommunityCell').addEventListener('click', async function() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const acceptTerms = document.getElementById('acceptTerms').checked;
+      <div class="fixed-footer">
+        <a href="/">
+          <img src="/static/logo.png" alt="Neuronum Logo - A Cyber Neuron" class="footer-logo">
+        </a>
+        <a class="footer-mail" href="mailto:welcome@neuronum.net">welcome@neuronum.net</a>
+      </div>
+    </div>
+  </div>
 
-    if (!email) {
+  <script>
+    document.getElementById('createCommunityCell').addEventListener('click', async function () {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const acceptTerms = document.getElementById('acceptTerms').checked;
+
+      if (!email) {
         alert('Please enter an Email');
         return;
-    }
+      }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(email)) {
-        alert('Please enter a valid business email (no Gmail, Yahoo, etc.)');
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+      if (!emailRegex.test(email)) {
+        alert('Please enter a valid email');
         return;
-    }
+      }
 
-    if (!password) {
+      if (!password) {
         alert('Please enter a Password');
         return;
-    }
+      }
 
-    if (!acceptTerms) {
+      if (!acceptTerms) {
         alert('You must agree to the Terms & Conditions and Privacy Policy');
         return;
-    }
+      }
 
-    // Build payload
-    const payload = {
+      const payload = {
         email: email,
         password: password
-    };
+      };
 
-   try {
-    const response = await fetch('https://neuronum.net/api/create_cell/community', {
-        method: 'POST',
-        headers: {
+      try {
+        const response = await fetch('https://neuronum.net/api/create_cell/community', {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status) {
+          console.log('Cell created successfully:', result);
+          localStorage.setItem('email', email);
+          localStorage.setItem('password', password);
+          window.location.href = '/cellkey';
+        } else {
+          console.error('Creation failed:', result);
+          alert(result.message || 'Failed to create cell. Please try again.');
+        }
+      } catch (err) {
+        console.error('Network error:', err);
+        alert('An error occurred. Please check your connection.');
+      }
     });
 
-    const result = await response.json();
-
-    if (result.status) {
-        console.log('Cell created successfully:', result);
-
-        localStorage.setItem('email', email);
-        localStorage.setItem('password', password);
-
-        window.location.href = '/cellkey';
-    } else {
-        console.error('Creation failed:', result);
-        alert(result.message || 'Failed to create cell. Please try again.');
-    }
-} catch (err) {
-    console.error('Network error:', err);
-    alert('An error occurred. Please check your connection.');
-}
-
-});
-
-      document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       const togglePassword = document.getElementById("togglePassword");
       const passwordField = document.getElementById("password");
 
-      togglePassword.addEventListener("click", function() {
+      togglePassword.addEventListener("click", function () {
         const type = passwordField.type === "password" ? "text" : "password";
         passwordField.type = type;
-
 
         this.querySelector("i").classList.toggle("fa-eye-slash");
         this.querySelector("i").classList.toggle("fa-eye");
       });
     });
-
-    </script>
-  </body>
+  </script>
+</body>
 </html>
