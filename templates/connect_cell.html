@@ -48,50 +48,58 @@
     </div>
 
    <script>
-        document.getElementById('connectCell').addEventListener('click', function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+    document.getElementById('connectCell').addEventListener('click', function () {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-            const fields = [
-                { value: email, message: 'Please enter an email address' },
-                { value: password, message: 'Please enter a password' }
-            ];
+        const fields = [
+            { value: email, message: 'Please enter an email address' },
+            { value: password, message: 'Please enter a password' }
+        ];
 
-            for (const field of fields) {
-                if (field.value.length === 0) {
-                    alert(field.message);
-                    return;
-                }
+        for (const field of fields) {
+            if (field.value.length === 0) {
+                alert(field.message);
+                return;
             }
+        }
 
-            const requestData = {
-                email: email,
-                password: password
-            };
+        const requestData = {
+            email: email,
+            password: password
+        };
 
-            fetch('https:neuronum.net/api/connect_cell', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData)
-            })
-           .then(response => response.json())
-          .then(data => {
-              console.log('Success:', data);
+        fetch('https://neuronum.net/api/connect_cell', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.host) {
+                // Successful login
+                localStorage.setItem('email', email);
+                localStorage.setItem('host', data.host);
+                window.location.href = '/cellkey';
+            } else {
+                // Host missing – treat as login failure
+                alert(data.message || 'Login failed. Please check your credentials.');
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Connection failed, please try again!');
+        });
+    });
+</script>
 
-              localStorage.setItem('email', email);
-              localStorage.setItem('password', password);
-              localStorage.setItem('host', data.host);
-
-              window.location.href = '/cellkey';
-          })
-          .catch((error) => {
-              console.error('Error:', error);
-              alert('Connection failed, please try again!');
-          });
-      });
-    </script>
     </body>
 </html>
 

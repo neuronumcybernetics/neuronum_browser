@@ -49,15 +49,12 @@
     <script>
   window.onload = function () {
       const email = localStorage.getItem('email');
-      if (email) {
-          document.getElementById('email').textContent = email;
-      } else {
-          document.getElementById('email').textContent = 'no mail';
-      }
+      document.getElementById('email').textContent = email || 'no mail';
   };
 
   document.getElementById('validateCellKeyForm').addEventListener('submit', async function(e) {
     e.preventDefault(); // Prevent the default form submission
+
     const cellKey = document.getElementById('cellKey').value.trim();
     const email = localStorage.getItem('email');
     const host = localStorage.getItem('host');
@@ -86,49 +83,44 @@
             })
         });
 
-        if (response.ok) {
         const result = await response.json();
-        console.log('Verification successful:', result);
 
-        if (result.session) {
+        if (response.ok && result.session) {
+            console.log('Verification successful:', result);
             localStorage.setItem('session', result.session);
+
+            // Generate key pair using Web Crypto API for ECDH
+            const keyPair = await window.crypto.subtle.generateKey(
+                {
+                    name: "ECDH",
+                    namedCurve: "P-256",
+                },
+                true, // extractable
+                ["deriveKey", "deriveBits"]
+            );
+
+            // Export keys to JSON Web Key (JWK) format
+            const privateKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+            const publicKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+            localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
+            localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
+
+            // Redirect after successful login and key generation
+            window.location.href = '/neuronum_cellai';
+
+        } else {
+            console.error('Verification failed:', result);
+            alert(result.message || "Wrong cell key. Please try again.");
         }
-        if (result.synapse) {
-            localStorage.setItem('synapse', result.synapse);
-        }
 
-              // Generate key pair using Web Crypto API for ECDH
-        const keyPair = await window.crypto.subtle.generateKey(
-            {
-                name: "ECDH",
-                namedCurve: "P-256",
-            },
-            true, // extractable
-            ["deriveKey", "deriveBits"] // key usages for ECDH
-        );
-
-        // Export keys to JSON Web Key (JWK) format for storage
-        const privateKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
-        const publicKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
-
-        // Store in localStorage (you can also use IndexedDB for more secure storage)
-        localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
-        localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
-
-        // Redirect after successful login and key generation
-        window.location.href = '/neuronum_cellai';
-            } else {
-                const error = await response.json();
-                console.error('Verification failed:', error);
-                alert(error.message || "Verification failed. Please check your cell key.");
-            }
-        } catch (err) {
-            console.error("Error submitting form:", err);
-            alert("An error occurred while verifying the cell key.");
-        }
-    });
-
+    } catch (err) {
+        console.error("Error submitting form:", err);
+        alert("An error occurred while verifying the cell key.");
+    }
+  });
 </script>
+
 
 
   </body>

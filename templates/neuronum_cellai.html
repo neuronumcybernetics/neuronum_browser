@@ -202,25 +202,6 @@
       background-color: transparent;
     }
 
-    /* Fullscreen button styling */
-.fullscreen-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  color: white;
-  font-size: 16px;
-  border-radius: 4px;
-  padding: 6px 8px;
-  cursor: pointer;
-  z-index: 9999;
-  transition: background 0.2s;
-}
-
-.fullscreen-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
 
 /* Fullscreen layout override */
 .node-screen-card.fullscreen {
@@ -238,6 +219,33 @@
   box-shadow: none;
   background-color: #111; /* optional: darken bg */
 }
+
+    .fullscreen-button {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      width: 50px;
+      height: 50px;
+      font-size: 18px;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      font-weight: 600;
+      border: 1px solid rgb(22, 22, 22);
+      background: none;
+      color: rgb(255, 255, 255);
+      font-family: 'Trebuchet MS';
+      border-radius: 10px;
+      backdrop-filter: blur(20px);
+      transition: all 1000ms;
+    }
+     
+    .fullscreen-button:hover {
+      transform: scale(0.98);
+      border: 1px solid rgb(255, 255, 255);
+    }
+
 
 .node-screen-card.fullscreen iframe {
   width: 100%;
@@ -335,16 +343,10 @@
     </div>
   </div>
 
-  <div class="footerContainer">
-    <button id="fullscreen-toggle" class="backButton" title="Toggle Fullscreen">
+    <button id="fullscreen-toggle" class="fullscreen-button" title="Toggle Fullscreen">
         <i class="fas fa-expand"></i>
     </button>
-    <div class="fixedFooter">
-      <a href="/neuronum_cellai"><img src="/static/logo.png" alt="Neuronum Logo - A Cyber Neuron" class="headerLogo"></a>
-      <a class="footerMail"><span id="host"></span></a>
-    </div>
-  </div>
-  
+
   <script>
     function handleTxResponse(payload, host, session) {
   const htmlOutput = document.getElementById("html-output");
@@ -384,12 +386,6 @@
       const host = localStorage.getItem('host');
       const session = localStorage.getItem('session');
 
-      const hostSpan = document.getElementById('host');
-      if (host && hostSpan) {
-        hostSpan.textContent = host;
-      } else {
-        hostSpan.textContent = 'cell not connected';
-      }
 
       const cellHostSpan = document.getElementById('cell-host');
       if (host && cellHostSpan) {
