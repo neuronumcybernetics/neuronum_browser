@@ -709,7 +709,7 @@
         font-size: 14px;
         color: #eaeaea;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        width: 300px;
+        width: 250px;
     }
 
     .notification-card:hover {
