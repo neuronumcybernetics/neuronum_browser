@@ -486,6 +486,7 @@
       grid-column: 1;
       grid-row: 2;
       overflow-y: auto;
+      display: block
     }
 
     .node-screen-card {
@@ -524,11 +525,19 @@
 
     .node-card {
       background: rgba(255, 255, 255, 0.03);
-      padding: 16px 24px;
+      padding: 20px 20px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .node-card p {
+      margin: 5px 0px;
+    }
+
+     .node-card a {
+      margin: 0px 0px;
+      display: inline-flex;
     }
     
     .node-card h4 {
@@ -536,18 +545,19 @@
     }
     
     .gateway-btn {
-      margin-left: 12px;
-      padding: 5px 10px;
+      padding: 10px 20px;
       font-size: 13px;
       cursor: pointer;
       background-color: #1c1c1c;
       color: #fff;
       border: 1px solid #333;
       border-radius: 6px;
+      display: flex;
     }
     
     .gateway-btn:hover {
-      background-color: #2a2a2a;
+      background-color: #9bf395;
+      color: black;
     }
 
     .node-list-container {

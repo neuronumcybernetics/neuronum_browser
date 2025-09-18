@@ -31,7 +31,7 @@
     <div class="bento-card node-list-card">
       <h3>Nodes</h3>
       <div class="search-container">
-        <input type="text" id="node-search" placeholder="Search nodes...">
+        <input type="text" id="node-search" placeholder="Search Nodes...">
       </div>
       <div id="node-list" class="node-list-container"></div>
     </div>
@@ -150,139 +150,156 @@
       }
 
       function renderNodes(searchTerm) {
-        nodeListContainer.innerHTML = '';
+    const nodeListContainer = document.getElementById("node-list");
+    nodeListContainer.innerHTML = '';
 
-        const filteredNodes = allNodes.filter(node => {
-          const nodeDescription = node.descr.toLowerCase();
-          const gatewayInfo = (node.config?.data_gateways || [])
-            .flatMap(g => g.actions || [])
-            .map(a => a.info.toLowerCase())
-            .join(' ');
-          const fullText = `${nodeDescription} ${gatewayInfo}`;
-          return fullText.includes(searchTerm);
-        });
-
-        if (filteredNodes.length === 0) {
-          const p = document.createElement("p");
-          p.textContent = "No nodes found matching your search.";
-          nodeListContainer.appendChild(p);
-          return;
+    const filteredNodes = allNodes.filter(node => {
+        // Filter out any nodes that do not have the required app_metadata
+        if (!node.config || !node.config.app_metadata) {
+            return false;
         }
 
-        filteredNodes.forEach(node => {
-          const nodeCard = document.createElement("div");
-          nodeCard.className = "node-card";
+        // Apply the search term filter
+        const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
+        const gatewayInfo = (node.config?.data_gateways || [])
+            .flatMap(g => g.actions || [])
+            .map(a => a.info ? a.info.toLowerCase() : '')
+            .join(' ');
+        const fullText = `${nodeDescription} ${gatewayInfo}`;
+        return fullText.includes(searchTerm.toLowerCase());
+    });
 
-          if (node.config && node.config.app_metadata) {
+    if (filteredNodes.length === 0) {
+        const p = document.createElement("p");
+        p.textContent = "No nodes found matching your search.";
+        nodeListContainer.appendChild(p);
+        return;
+    }
+
+    filteredNodes.forEach(node => {
+        // Create the node-card and its contents only if app_metadata exists
+        if (node.config && node.config.app_metadata) {
+            const nodeCard = document.createElement("div");
+            nodeCard.className = "node-card";
+
             const title = document.createElement("h4");
             title.textContent = `${node.config.app_metadata.name}`;
             nodeCard.appendChild(title);
 
             const metadataDiv = document.createElement("div");
             metadataDiv.innerHTML = `
-              <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
-              <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
+                <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
+                <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
             `;
             nodeCard.appendChild(metadataDiv);
-          }
 
-          if (node.config && node.config.legals) {
-            const legalsDiv = document.createElement("div");
-            legalsDiv.innerHTML = `
-              <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
-              <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
-            `;
-            nodeCard.appendChild(legalsDiv);
-          }
+            if (node.config && node.config.legals) {
+                const legalsDiv = document.createElement("div");
+                legalsDiv.innerHTML = `
+                    <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
+                    <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
+                `;
+                nodeCard.appendChild(legalsDiv);
+            }
 
-          if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
-            const gatewayList = document.createElement("ul");
-            gatewayList.style.listStyle = "none";
-            gatewayList.style.paddingLeft = "0";
+            if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
+                const gatewayList = document.createElement("ul");
+                gatewayList.style.listStyle = "none";
+                gatewayList.style.paddingLeft = "0";
 
-            node.config.data_gateways.forEach(gateway => {
-              const gatewayID = gateway.id;
+                const actionsPresent = node.config.data_gateways.some(gateway =>
+                    gateway.id && gateway.id.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0
+                );
 
-              if (gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
-                const gatewayTitle = document.createElement("h5");
-                gatewayTitle.textContent = "Actions";
-                gatewayTitle.style.marginTop = "20px";
-                nodeCard.appendChild(gatewayTitle);
+                if (actionsPresent) {
+                    const actionsTitle = document.createElement("h5");
+                    actionsTitle.style.marginTop = "20px";
+                    actionsTitle.textContent = "Actions";
+                    nodeCard.appendChild(actionsTitle);
+                }
 
-                gateway.actions.forEach(actionItem => {
-                  const li = document.createElement("li");
-                  li.style.marginBottom = "10px";
+                node.config.data_gateways.forEach(gateway => {
+                    const gatewayID = gateway.id;
 
-                  const btn = document.createElement("button");
-                  btn.className = "gateway-btn";
-                  btn.textContent = actionItem.info;
+                    if (gatewayID && gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
+                        gateway.actions.forEach(actionItem => {
+                            const li = document.createElement("li");
+                            li.style.marginBottom = "10px";
 
-                  btn.addEventListener("click", async () => {
-                    const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
-                    const publicKeyJwk = localStorage.getItem('publicKey');
-                    if (!publicKeyJwk) return;
+                            const btn = document.createElement("button");
+                            btn.className = "gateway-btn";
+                            btn.textContent = actionItem.info;
 
-                    const payloadData = {
-                      action: actionItem.action,
-                      publicKey: JSON.parse(publicKeyJwk)
-                    };
+                            btn.addEventListener("click", async () => {
+                                // Assume `host`, `session`, `decryptPayload`, `handleTxResponse`, and `showCustomAlert`
+                                // are defined in the broader scope.
+                                const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
+                                const publicKeyJwk = localStorage.getItem('publicKey');
+                                if (!publicKeyJwk) return;
 
-                    const payload = {
-                      data: payloadData,
-                      host: host,
-                      session: session
-                    };
+                                const payloadData = {
+                                    action: actionItem.action,
+                                    publicKey: JSON.parse(publicKeyJwk)
+                                };
 
-                    try {
-                      const res = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                      });
+                                const payload = {
+                                    data: payloadData,
+                                    host: host,
+                                    session: session
+                                };
 
-                      if (res.ok) {
-                        const data = await res.json();
-                        showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
-                        if (data.success && data.response) {
-                          try {
-                            const decrypted = await decryptPayload(data.response);
-                            showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
-                            handleTxResponse(decrypted, host, session);
-                          } catch (decryptError) {
-                            showCustomAlert("Decryption Failed", decryptError.message);
-                            handleTxResponse(null, host, session);
-                          }
-                        } else {
-                          handleTxResponse(null, host, session);
-                        }
-                      } else {
-                        showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
-                        handleTxResponse(null, host, session);
-                      }
-                    } catch (err) {
-                      showCustomAlert("Fetch Error", err.message);
-                      handleTxResponse(null, host, session);
+                                try {
+                                    const res = await fetch(url, {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify(payload)
+                                    });
+
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
+                                        if (data.success && data.response) {
+                                            try {
+                                                const decrypted = await decryptPayload(data.response);
+                                                showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+                                                handleTxResponse(decrypted, host, session);
+                                            } catch (decryptError) {
+                                                showCustomAlert("Decryption Failed", decryptError.message);
+                                                handleTxResponse(null, host, session);
+                                            }
+                                        } else {
+                                            handleTxResponse(null, host, session);
+                                        }
+                                    } else {
+                                        showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
+                                        handleTxResponse(null, host, session);
+                                    }
+                                } catch (err) {
+                                    showCustomAlert("Fetch Error", err.message);
+                                    handleTxResponse(null, host, session);
+                                }
+                            });
+
+                            li.appendChild(btn);
+                            gatewayList.appendChild(li);
+                        });
                     }
-                  });
-
-                  li.appendChild(btn);
-                  gatewayList.appendChild(li);
                 });
-              }
-            });
 
-            nodeCard.appendChild(gatewayList);
-          } else {
-            const p = document.createElement("p");
-            p.textContent = "(no gateways)";
-            nodeCard.appendChild(p);
-          }
+                nodeCard.appendChild(gatewayList);
 
-          nodeListContainer.appendChild(nodeCard);
-        });
-      }
+            } else {
+                const p = document.createElement("p");
+                p.textContent = "(no gateways)";
+                nodeCard.appendChild(p);
+            }
+
+            nodeListContainer.appendChild(nodeCard);
+        }
+    });
+}
     };
 
     const fullscreenToggle = document.getElementById("fullscreen-toggle");
