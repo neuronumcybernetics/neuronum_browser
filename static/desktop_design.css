@@ -476,6 +476,26 @@
       grid-row: 1;
     }
 
+    #disconnect-btn a {
+      text-decoration: none;
+    }
+
+    #disconnect-btn {
+      padding: 10px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      background-color: #1c1c1c;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      display: flex;
+    }
+    
+    #disconnect-btn:hover {
+      background-color: #9bf395;
+      color: black;
+    }
+
     .cell-stx-card {
       grid-column: 1;
       grid-row: 3;
