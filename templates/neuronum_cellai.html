@@ -53,7 +53,95 @@
     <i class="fas fa-expand"></i>
   </button>
 
+  <button id="connect-ws-btn">Connect to Data Stream</button>
+    <button id="send-data-btn">Send Data</button>
+    <div id="log"></div>
+
   <script>
+    let socket = null;
+let isAuthenticated = false;
+
+// Function to handle the WebSocket connection, now outside of window.onload
+function connectWebSocket() {
+    const host = localStorage.getItem('host');
+    const session = localStorage.getItem('session');
+    const tx_id = "private";
+    const wsUrl = `wss://neuronum.net/api/stream/${tx_id}`;
+
+    if (!host || !session) {
+        showCustomAlert("Authentication Error", "Missing host or session data.");
+        return;
+    }
+
+    if (socket?.readyState === WebSocket.OPEN) {
+        showCustomAlert("Status", "WebSocket is already open.");
+        return;
+    }
+
+    socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+        showCustomAlert("Websocket open", "✅ WebSocket connection opened");
+        const authPayload = { host, session };
+        socket.send(JSON.stringify(authPayload));
+        log("🔐 Sent auth payload");
+    };
+
+    socket.onmessage = (event) => {
+        log("📨 Received: " + event.data);
+        showCustomAlert("Received", event.data);
+
+        if (event.data === "Authentication successful") {
+            isAuthenticated = true;
+            showCustomAlert("✅ Authenticated", "You may now send data");
+        }
+    };
+
+    socket.onerror = (error) => {
+        showCustomAlert("❌ WebSocket error", JSON.stringify(error));
+        log("❌ WebSocket error: " + JSON.stringify(error));
+    };
+
+    socket.onclose = (event) => {
+        showCustomAlert("Websocket closed", `Code: ${event.code}, Reason: ${event.reason}`);
+        log("🔌 WebSocket closed");
+        isAuthenticated = false;
+    };
+}
+
+// Function to send data, also outside of window.onload
+function sendData() {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log("⚠️ WebSocket is not open.");
+        showCustomAlert("Websocket is not open");
+        return;
+    }
+
+    if (!isAuthenticated) {
+        log("🚫 Cannot send data before authentication.");
+        showCustomAlert("Wait!", "You must wait for authentication to complete before sending.");
+        return;
+    }
+
+    const testData = {
+        label: "test-label",
+        data: {
+            message: "Hello from the frontend!",
+            timestamp: new Date().toISOString()
+        }
+    };
+
+    socket.send(JSON.stringify(testData));
+    log("📤 Sent test data");
+    showCustomAlert("Sent data", "✅ Sent data to websocket");
+}
+
+// Your existing logging function
+function log(message) {
+    const logEl = document.getElementById("log");
+    logEl.textContent += message + "\n";
+}
+
     function handleTxResponse(payload, host, session) {
       const htmlOutput = document.getElementById("html-output");
       htmlOutput.innerHTML = "";
@@ -300,6 +388,16 @@
         }
     });
 }
+
+  const connectButton = document.getElementById('connect-ws-btn');
+    if (connectButton) {
+        connectButton.addEventListener('click', connectWebSocket);
+    }
+    
+    const sendButton = document.getElementById('send-data-btn');
+    if (sendButton) {
+        sendButton.addEventListener('click', sendData);
+    }
     };
 
     const fullscreenToggle = document.getElementById("fullscreen-toggle");
@@ -565,6 +663,7 @@ function openStx() {
     stxSocket.onmessage = function (event) {
         try {
             const notification = JSON.parse(event.data);
+            showCustomAlert("Data Received", JSON.parse(event.data));
 
             if (notification.label === 'notification') {
                 const card = document.createElement("div");
