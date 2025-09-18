@@ -690,7 +690,7 @@
         overflow-y: auto;
     }
 
-  #stx-data {
+    #stx-data {
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
