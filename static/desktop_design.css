@@ -504,12 +504,17 @@
       display: block
     }
 
- 
-
     .cell-stx-card {
       grid-column: 3;
-      grid-row: 1 / 5;
+      grid-row: 1 / 2;
       overflow-y: auto;
+    }
+
+    .contacts-card {
+      grid-column: 3;
+      grid-row: 2 / 5;
+      overflow-y: auto;
+      width: 250px;
     }
 
     .node-screen-card {
@@ -591,6 +596,13 @@
       gap: 18px;
     }
 
+     .contacts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+
     .search-container {
       margin-top: 10px;
       margin-bottom: 20px;
@@ -639,7 +651,6 @@
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 10000;
       width: 100vw;
       height: 100vh;
       margin: 0;

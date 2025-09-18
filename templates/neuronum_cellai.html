@@ -47,15 +47,24 @@
       <h3>Notifications</h3>
       <div id="stx-data"></div>
     </div>
-  </div>
+
+     <div class="bento-card contacts-card">
+      <h3>Contacts</h3>
+      <div class="search-container">
+        <input type="text" id="node-search" placeholder="Search Contacts...">
+      </div>
+      <div id="node-list" class="contacts-container"></div>
+        <button id="connect-ws-btn">Connect to Data Stream</button>
+        <button id="send-data-btn">Send Data</button>
+        <div id="log"></div>
+    </div>
+
 
   <button id="fullscreen-toggle" class="fullscreen-button" title="Toggle Fullscreen">
     <i class="fas fa-expand"></i>
   </button>
 
-  <button id="connect-ws-btn">Connect to Data Stream</button>
-    <button id="send-data-btn">Send Data</button>
-    <div id="log"></div>
+  </div>
 
   <script>
     let socket = null;
