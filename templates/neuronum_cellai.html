@@ -244,7 +244,7 @@
 
     if (guest === "True") {
         localStorage.clear();
-        window.location.href = '/neuronum_cellai';
+        window.location.href = '/';
         return;
     }
 
@@ -265,7 +265,7 @@
         if (response.ok && result.status) {
         console.log('Cell deleted successfully:', result);
         localStorage.clear();
-        window.location.href = '/neuronum_cellai';
+        window.location.href = '/';
         } else {
         console.error('Cell deletion failed:', result);
         alert(result.message || "Deletion failed. Please try again.");
