@@ -596,19 +596,8 @@
     }
 
     .public-key {
-      line-break: auto;
-      overflow-y: auto;
-    }
-
-    .public-key{
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    .public-key::-webkit-scrollbar {
       display: none;
     }
-
 
      .node-card a {
       margin: 0px 0px;
