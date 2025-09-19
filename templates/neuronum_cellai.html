@@ -88,7 +88,7 @@
       nodeListContainer.innerHTML = '';
 
       const filteredNodes = allNodes.filter(node => {
-        if (!node.config || !node.config.app_metadata) {
+        if (!node.config || !node.config.app_metadata || !node.config.public_key) {
           return false;
         }
 
