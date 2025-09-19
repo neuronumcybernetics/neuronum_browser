@@ -151,29 +151,40 @@ function log(message) {
     logEl.textContent += message + "\n";
 }
 
-    function handleTxResponse(payload, host, session) {
-      const htmlOutput = document.getElementById("html-output");
-      htmlOutput.innerHTML = "";
 
-      if (payload && payload.html) {
-        const iframe = document.createElement("iframe");
-        htmlOutput.appendChild(iframe);
-        const iframeDoc = iframe.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(payload.html);
-        iframeDoc.close();
-      } else if (payload && payload.json) {
-        const pre = document.createElement("pre");
-        pre.textContent = payload.json;
-        htmlOutput.appendChild(pre);
-      } else {
-        htmlOutput.innerHTML = `
-          <div class="no-app-selected">
-            <img src="/static/logo.png" alt="Neuronum Logo">
-          </div>
-        `;
-      }
-    }
+function handleTxResponse(payload) {
+  const htmlOutput = document.getElementById("html-output");
+  htmlOutput.innerHTML = "";
+
+  if (payload && payload.html) {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-scripts");
+    htmlOutput.appendChild(iframe);
+
+    // Create a Blob URL for the HTML content
+    const blob = new Blob([payload.html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+
+    iframe.src = url;
+
+    // Optional: revoke the object URL when iframe unloads to free memory
+    iframe.onload = () => {
+      URL.revokeObjectURL(url);
+    };
+
+  } else if (payload && payload.json) {
+    const pre = document.createElement("pre");
+    pre.textContent = payload.json;
+    htmlOutput.appendChild(pre);
+  } else {
+    htmlOutput.innerHTML = `
+      <div class="no-app-selected">
+        <img src="/static/logo.png" alt="Neuronum Logo">
+      </div>
+    `;
+  }
+}
+
 
     window.onload = function () {
       const host = localStorage.getItem('host');
@@ -328,8 +339,6 @@ function log(message) {
                             btn.textContent = actionItem.info;
 
                             btn.addEventListener("click", async () => {
-                                // Assume `host`, `session`, `decryptPayload`, `handleTxResponse`, and `showCustomAlert`
-                                // are defined in the broader scope.
                                 const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
                                 const publicKeyJwk = localStorage.getItem('publicKey');
                                 if (!publicKeyJwk) return;
@@ -428,11 +437,6 @@ function log(message) {
     }
 
 window.addEventListener('message', async (event) => {
-    if (event.origin !== 'http://127.0.0.1:55000') {
-        console.error('Message received from an unauthorized origin:', event.origin);
-        return;
-    }
-
     const message = event.data;
 
     if (message?.type === 'iframe_request') {
