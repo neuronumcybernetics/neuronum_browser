@@ -92,6 +92,7 @@
           return false;
         }
 
+        const nodePublicKey = node.config?.public_key.toLowerCase() || '';
         const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
         const gatewayInfo = (node.config?.data_gateways || [])
           .flatMap(g => g.actions || [])
@@ -99,6 +100,7 @@
           .join(' ');
         const fullText = `${nodeDescription} ${gatewayInfo}`;
         return fullText.includes(searchTerm.toLowerCase());
+      
       });
 
       if (filteredNodes.length === 0) {
@@ -109,7 +111,7 @@
       }
 
       filteredNodes.forEach(node => {
-        if (node.config && node.config.app_metadata) {
+        if (node.config && node.config.app_metadata && node.config.public_key) {
           const nodeCard = document.createElement("div");
           nodeCard.className = "node-card";
 
@@ -132,6 +134,12 @@
             `;
             nodeCard.appendChild(legalsDiv);
           }
+
+          const nodePublicKeyDiv = document.createElement("div");
+          nodePublicKeyDiv.innerHTML = `
+            <p class="public-key"><strong>Public Key:</strong> ${node.config.public_key}</p>
+          `;
+          nodeCard.appendChild(nodePublicKeyDiv);
 
           if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
             const gatewayList = document.createElement("ul");
@@ -188,25 +196,20 @@
 
                       if (res.ok) {
                         const data = await res.json();
-                        showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
                         if (data.success && data.response) {
                           try {
                             const decrypted = await decryptPayload(data.response);
-                            showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
                             handleTxResponse(decrypted, host, session);
                           } catch (decryptError) {
-                            showCustomAlert("Decryption Failed", decryptError.message);
                             handleTxResponse(null, host, session);
                           }
                         } else {
                           handleTxResponse(null, host, session);
                         }
                       } else {
-                        showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
                         handleTxResponse(null, host, session);
                       }
                     } catch (err) {
-                      showCustomAlert("Fetch Error", err.message);
                       handleTxResponse(null, host, session);
                     }
                   });
@@ -378,12 +381,10 @@
         const publicKeyJwk = localStorage.getItem('publicKey');
 
         if (!host || !session) {
-          showCustomAlert("Authentication Error", "Missing host or session data.");
           return;
         }
 
         if (!publicKeyJwk) {
-          showCustomAlert("Encryption Error", "No public key found in localStorage.");
           return;
         }
 
@@ -435,7 +436,6 @@
             }
           }
         } catch (error) {
-          showCustomAlert("API Request Failed", `An error occurred: ${error.message}`);
           handleTxResponse(null, host, session);
 
           const iframe = document.querySelector('iframe');
@@ -461,11 +461,9 @@
 
     async function decryptPayload(encryptedPayload) {
       try {
-        showCustomAlert("Decryption Status", "Starting decryption process...");
 
         const privateKeyJwk = JSON.parse(localStorage.getItem('privateKey'));
         if (!privateKeyJwk) {
-          showCustomAlert("Decryption Failed", "Private key not found in localStorage.");
           throw new Error("Private key not found in localStorage.");
         }
 
@@ -525,11 +523,9 @@
 
         const decryptedString = new TextDecoder().decode(decryptedBytes);
         const finalResult = JSON.parse(decryptedString);
-        showCustomAlert("Decryption Success!", "Data has been successfully decrypted.");
 
         return finalResult;
       } catch (error) {
-        showCustomAlert("Decryption Failed", `An error occurred: ${error.message}`);
         throw error;
       }
     }
