@@ -174,16 +174,26 @@
                     const publicKeyJwk = localStorage.getItem('publicKey');
                     if (!publicKeyJwk) return;
 
-                    const payloadData = {
-                      action: actionItem.action,
-                      publicKey: JSON.parse(publicKeyJwk)
+                    const nodePublicKeyJwk = await convertPemToJwk(node.config.public_key);
+                    console.log(node.config.public_key)
+                    if (!nodePublicKeyJwk) {
+                      alert("Failed to convert node public key.");
+                      return;
+                    }
+
+                    console.log(nodePublicKeyJwk);
+                    const dataToEncrypt = { action: actionItem.action }; // This needs to be the payload to encrypt
+                    const encryptedData = await encryptPayload(dataToEncrypt, nodePublicKeyJwk);
+                    const payload = {
+                        data: {
+                            encrypted: encryptedData,
+                            publicKey: publicKeyJwk
+                        },
+                        host: host,
+                        session: session
                     };
 
-                    const payload = {
-                      data: payloadData,
-                      host: host,
-                      session: session
-                    };
+                    console.log(payload);
 
                     try {
                       const res = await fetch(url, {
@@ -367,32 +377,43 @@
       });
     }
 
+   // ... (rest of your script) ...
+
     window.addEventListener('message', async (event) => {
       const message = event.data;
 
       if (message?.type === 'iframe_request') {
         const {
           endpoint,
-          data
+          data,
+          nodePublicKey
         } = message;
 
         const host = localStorage.getItem('host');
         const session = localStorage.getItem('session');
         const publicKeyJwk = localStorage.getItem('publicKey');
 
-        if (!host || !session) {
-          return;
-        }
-
-        if (!publicKeyJwk) {
+        if (!host || !session || !publicKeyJwk || !nodePublicKey) {
+          console.error("Missing required data for API request.");
           return;
         }
 
         try {
+          // --- BEGIN NEW LOGIC FOR ENCRYPTION ---
+          // Convert the node's PEM public key to JWK format
+          const nodePublicKeyJwk = await convertPemToJwk(nodePublicKey);
+          if (!nodePublicKeyJwk) {
+            throw new Error("Failed to convert node public key.");
+          }
+
+          // Encrypt the payload data using the node's public key
+          const encryptedData = await encryptPayload(data, nodePublicKeyJwk);
+
+          // Build the final payload with the encrypted data
           const payload = {
             data: {
-              ...data,
-              publicKey: JSON.parse(publicKeyJwk)
+              encrypted: encryptedData,
+              publicKey: publicKeyJwk
             },
             host: host,
             session: session
@@ -448,6 +469,7 @@
         }
       }
     });
+
 
     function base64UrlToUint8Array(str) {
       const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -528,6 +550,126 @@
       } catch (error) {
         throw error;
       }
+    }
+
+    async function encryptPayload(payload, recipientPublicKeyJwk) {
+      try {
+        const recipientPublicKey = await window.crypto.subtle.importKey(
+          "jwk",
+          recipientPublicKeyJwk, {
+            name: "ECDH",
+            namedCurve: "P-256"
+          },
+          true,
+          []
+        );
+
+        const ephemeralKeyPair = await window.crypto.subtle.generateKey({
+          name: "ECDH",
+          namedCurve: "P-256"
+        },
+          true,
+          ["deriveKey", "deriveBits"]
+        );
+
+        const sharedSecret = await window.crypto.subtle.deriveBits({
+          name: "ECDH",
+          public: recipientPublicKey
+        },
+          ephemeralKeyPair.privateKey,
+          256
+        );
+
+        const aesKey = await window.crypto.subtle.deriveKey({
+          name: "HKDF",
+          salt: new Uint8Array(),
+          info: new TextEncoder().encode("handshake data"),
+          hash: "SHA-256",
+        },
+          await window.crypto.subtle.importKey("raw", sharedSecret, {
+            name: "HKDF"
+          }, false, ["deriveKey"]), {
+            name: "AES-GCM",
+            length: 256
+          },
+          true, ["encrypt"]
+        );
+
+        const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+        const encodedPayload = new TextEncoder().encode(JSON.stringify(payload));
+
+        const encrypted = await window.crypto.subtle.encrypt({
+          name: "AES-GCM",
+          iv: nonce,
+        },
+          aesKey,
+          encodedPayload
+        );
+
+        const ephemeralPublicKeyJwk = await window.crypto.subtle.exportKey("jwk", ephemeralKeyPair.publicKey);
+        const ephemeralPublicKeyRaw = new Uint8Array(await window.crypto.subtle.exportKey("raw", ephemeralKeyPair.publicKey));
+
+        return {
+          ephemeralPublicKey: uint8ArrayToBase64Url(ephemeralPublicKeyRaw),
+          nonce: uint8ArrayToBase64Url(nonce),
+          ciphertext: uint8ArrayToBase64Url(new Uint8Array(encrypted)),
+        };
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    function uint8ArrayToBase64Url(arr) {
+      const base64 = btoa(String.fromCharCode.apply(null, arr));
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+   async function convertPemToJwk(pem) {
+      // Step 1: Sanitize the PEM string
+      const pemContents = pem
+        .replace("-----BEGIN PUBLIC KEY-----", "")
+        .replace("-----END PUBLIC KEY-----", "")
+        .replace("-----BEGINPUBLICKEY-----", "")
+        .replace("-----ENDPUBLICKEY-----", "")
+        .replace(/\s/g, "");
+
+      // Step 2: Handle potential Base64-URL characters
+      const base64 = pemContents.replace(/-/g, '+').replace(/_/g, '/');
+
+      // Step 3: Add padding if necessary
+      const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+
+      // Step 4: Decode the Base64 string to an ArrayBuffer
+      try {
+        const binaryDer = _base64ToArrayBuffer(paddedBase64);
+
+        // Step 5: Import the key in "spki" format
+        const key = await window.crypto.subtle.importKey(
+          "spki",
+          binaryDer, {
+            name: "ECDH",
+            namedCurve: "P-256"
+          },
+          true,
+          []
+        );
+
+        // Step 6: Export it to the JWK format
+        return await window.crypto.subtle.exportKey("jwk", key);
+      } catch (e) {
+        console.error("Error converting PEM to JWK:", e);
+        return null;
+      }
+    }
+
+    function _base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
     }
   </script>
 </body>
