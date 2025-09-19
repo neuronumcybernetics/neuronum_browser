@@ -4,32 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Neuronum: The Real-Time E2E Browser</title>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/static/desktop_design.css">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
-
-  <div id="custom-alert-modal" style="display: none; position: fixed; top: 40px; right: 40px; background-color: rgba(0, 0, 0, 0.7); z-index: 10000; justify-content: center; align-items: center;">
-    <div style="background-color: #2a2a2a; color: #fff; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);">
-      <h4 style="margin-top: 0;">Alert</h4>
-      <pre id="alert-content" style="white-space: pre-wrap; word-wrap: break-word; font-size: 14px; background-color: #1e1e1e; padding: 10px; border-radius: 4px; border: 1px solid #333; max-height: 400px; overflow-y: auto;"></pre>
-      <button id="close-alert-btn" style="margin-top: 20px; padding: 8px 16px; background-color: #01c07d; color: white; border: none; border-radius: 6px; cursor: pointer;">Close</button>
-    </div>
-  </div>
 
   <div class="main-grid-layout">
     <div class="bento-card cell-id-card">
       <h3><span id="cell-host"></span></h3>
       <a href="/#" id="disconnect-btn">Disconnect →</a>
-      <a href="/neuronum_cellai" id="disconnect-btn">Update Nodes →</a>
+      <a href="/#" id="delete-cell">Delete Cell →</a>
     </div>
 
     <div class="bento-card node-list-card">
       <h3>Nodes</h3>
+       <a href="/#" id="update-nodes">Update Nodes →</a>
       <div class="search-container">
         <input type="text" id="node-search" placeholder="Search Nodes...">
       </div>
@@ -43,153 +34,289 @@
       <div id="node-list-screen" class="node-list-container"></div>
     </div>
 
-    <div class="bento-card cell-stx-card">
-      <h3>Notifications</h3>
-      <div id="stx-data"></div>
-    </div>
-
-     <div class="bento-card contacts-card">
-      <h3>Contacts</h3>
-      <div class="search-container">
-        <input type="text" id="node-search" placeholder="Search Contacts...">
-      </div>
-      <div id="node-list" class="contacts-container"></div>
-        <button id="connect-ws-btn">Connect to Data Stream</button>
-        <button id="send-data-btn">Send Data</button>
-        <div id="log"></div>
-    </div>
-
-
-  <button id="fullscreen-toggle" class="fullscreen-button" title="Toggle Fullscreen">
-    <i class="fas fa-expand"></i>
-  </button>
-
+    <button id="fullscreen-toggle" class="fullscreen-button" title="Toggle Fullscreen">
+      <i class="fas fa-expand"></i>
+    </button>
   </div>
 
   <script>
-    let socket = null;
-let isAuthenticated = false;
+    let allNodes = [];
+    let host = null;
+    let session = null;
+    let nodeListContainer = null;
 
-// Function to handle the WebSocket connection, now outside of window.onload
-function connectWebSocket() {
-    const host = localStorage.getItem('host');
+    async function fetchNodes() {
+      const payload = { host, session };
+
+      try {
+        const response = await fetch("https://neuronum.net/browser/api/list_nodes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          const p = document.createElement("p");
+          p.textContent = "Failed to fetch nodes.";
+          if (nodeListContainer) nodeListContainer.appendChild(p);
+          return;
+        }
+
+        if (result.Nodes.length === 0) {
+          const p = document.createElement("p");
+          p.textContent = "No nodes available.";
+          if (nodeListContainer) nodeListContainer.appendChild(p);
+          return;
+        }
+
+        allNodes = result.Nodes;
+        renderNodes("");
+      } catch (err) {
+        const p = document.createElement("p");
+        p.textContent = "Failed to fetch nodes. Network error.";
+        if (nodeListContainer) nodeListContainer.appendChild(p);
+      }
+    }
+
+    function renderNodes(searchTerm) {
+      if (!nodeListContainer) return;
+
+      nodeListContainer.innerHTML = '';
+
+      const filteredNodes = allNodes.filter(node => {
+        if (!node.config || !node.config.app_metadata) {
+          return false;
+        }
+
+        const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
+        const gatewayInfo = (node.config?.data_gateways || [])
+          .flatMap(g => g.actions || [])
+          .map(a => a.info ? a.info.toLowerCase() : '')
+          .join(' ');
+        const fullText = `${nodeDescription} ${gatewayInfo}`;
+        return fullText.includes(searchTerm.toLowerCase());
+      });
+
+      if (filteredNodes.length === 0) {
+        const p = document.createElement("p");
+        p.textContent = "No Nodes found";
+        nodeListContainer.appendChild(p);
+        return;
+      }
+
+      filteredNodes.forEach(node => {
+        if (node.config && node.config.app_metadata) {
+          const nodeCard = document.createElement("div");
+          nodeCard.className = "node-card";
+
+          const title = document.createElement("h4");
+          title.textContent = `${node.config.app_metadata.name}`;
+          nodeCard.appendChild(title);
+
+          const metadataDiv = document.createElement("div");
+          metadataDiv.innerHTML = `
+            <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
+            <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
+          `;
+          nodeCard.appendChild(metadataDiv);
+
+          if (node.config && node.config.legals) {
+            const legalsDiv = document.createElement("div");
+            legalsDiv.innerHTML = `
+              <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
+              <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
+            `;
+            nodeCard.appendChild(legalsDiv);
+          }
+
+          if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
+            const gatewayList = document.createElement("ul");
+            gatewayList.style.listStyle = "none";
+            gatewayList.style.paddingLeft = "0";
+
+            const actionsPresent = node.config.data_gateways.some(gateway =>
+              gateway.id && gateway.id.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0
+            );
+
+            if (actionsPresent) {
+              const actionsTitle = document.createElement("h4");
+              actionsTitle.style.marginTop = "25px";
+              actionsTitle.textContent = "Actions";
+              nodeCard.appendChild(actionsTitle);
+            }
+
+            node.config.data_gateways.forEach(gateway => {
+              const gatewayID = gateway.id;
+
+              if (gatewayID && gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
+                gateway.actions.forEach(actionItem => {
+                  const li = document.createElement("li");
+                  li.style.marginBottom = "10px";
+
+                  const btn = document.createElement("button");
+                  btn.className = "gateway-btn";
+                  btn.textContent = actionItem.info;
+
+                  btn.addEventListener("click", async () => {
+                    const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
+                    const publicKeyJwk = localStorage.getItem('publicKey');
+                    if (!publicKeyJwk) return;
+
+                    const payloadData = {
+                      action: actionItem.action,
+                      publicKey: JSON.parse(publicKeyJwk)
+                    };
+
+                    const payload = {
+                      data: payloadData,
+                      host: host,
+                      session: session
+                    };
+
+                    try {
+                      const res = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                      });
+
+                      if (res.ok) {
+                        const data = await res.json();
+                        showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
+                        if (data.success && data.response) {
+                          try {
+                            const decrypted = await decryptPayload(data.response);
+                            showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
+                            handleTxResponse(decrypted, host, session);
+                          } catch (decryptError) {
+                            showCustomAlert("Decryption Failed", decryptError.message);
+                            handleTxResponse(null, host, session);
+                          }
+                        } else {
+                          handleTxResponse(null, host, session);
+                        }
+                      } else {
+                        showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
+                        handleTxResponse(null, host, session);
+                      }
+                    } catch (err) {
+                      showCustomAlert("Fetch Error", err.message);
+                      handleTxResponse(null, host, session);
+                    }
+                  });
+
+                  li.appendChild(btn);
+                  gatewayList.appendChild(li);
+                });
+              }
+            });
+
+            nodeCard.appendChild(gatewayList);
+          } else {
+            const p = document.createElement("p");
+            p.textContent = "(no gateways)";
+            nodeCard.appendChild(p);
+          }
+
+          nodeListContainer.appendChild(nodeCard);
+        }
+      });
+    }
+
+    document.getElementById('update-nodes').addEventListener('click', async function (e) {
+      e.preventDefault();
+      await fetchNodes();
+    });
+
+
+   document.getElementById('delete-cell').addEventListener('click', async function (e) {
+    e.preventDefault();
+
     const session = localStorage.getItem('session');
-    const tx_id = "private";
-    const wsUrl = `wss://neuronum.net/api/stream/${tx_id}`;
+    const host = localStorage.getItem('host');
+    const guest = localStorage.getItem('guest');
 
-    if (!host || !session) {
-        showCustomAlert("Authentication Error", "Missing host or session data.");
+    if (guest === "True") {
+        localStorage.clear();
+        window.location.href = '/neuronum_cellai';
         return;
     }
 
-    if (socket?.readyState === WebSocket.OPEN) {
-        showCustomAlert("Status", "WebSocket is already open.");
-        return;
-    }
+    try {
+        const response = await fetch('https://neuronum.net/browser/api/delete_cell', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            host: host,
+            session: session
+        })
+        });
 
-    socket = new WebSocket(wsUrl);
+        const result = await response.json();
 
-    socket.onopen = () => {
-        showCustomAlert("Websocket open", "✅ WebSocket connection opened");
-        const authPayload = { host, session };
-        socket.send(JSON.stringify(authPayload));
-        log("🔐 Sent auth payload");
-    };
-
-    socket.onmessage = (event) => {
-        log("📨 Received: " + event.data);
-        showCustomAlert("Received", event.data);
-
-        if (event.data === "Authentication successful") {
-            isAuthenticated = true;
-            showCustomAlert("✅ Authenticated", "You may now send data");
+        if (response.ok && result.status) {
+        console.log('Cell deleted successfully:', result);
+        localStorage.clear();
+        window.location.href = '/neuronum_cellai';
+        } else {
+        console.error('Cell deletion failed:', result);
+        alert(result.message || "Deletion failed. Please try again.");
         }
-    };
 
-    socket.onerror = (error) => {
-        showCustomAlert("❌ WebSocket error", JSON.stringify(error));
-        log("❌ WebSocket error: " + JSON.stringify(error));
-    };
-
-    socket.onclose = (event) => {
-        showCustomAlert("Websocket closed", `Code: ${event.code}, Reason: ${event.reason}`);
-        log("🔌 WebSocket closed");
-        isAuthenticated = false;
-    };
-}
-
-// Function to send data, also outside of window.onload
-function sendData() {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        log("⚠️ WebSocket is not open.");
-        showCustomAlert("Websocket is not open");
-        return;
+    } catch (err) {
+        console.error("Error deleting cell:", err);
+        alert("An error occurred while deleting the cell.");
     }
+    });
 
-    if (!isAuthenticated) {
-        log("🚫 Cannot send data before authentication.");
-        showCustomAlert("Wait!", "You must wait for authentication to complete before sending.");
-        return;
+
+
+    function handleTxResponse(payload) {
+      const htmlOutput = document.getElementById("html-output");
+      htmlOutput.innerHTML = "";
+
+      if (payload && payload.html) {
+        const iframe = document.createElement("iframe");
+        iframe.setAttribute("sandbox", "allow-scripts");
+        htmlOutput.appendChild(iframe);
+
+        const blob = new Blob([payload.html], {
+          type: "text/html"
+        });
+        const url = URL.createObjectURL(blob);
+
+        iframe.src = url;
+
+        iframe.onload = () => {
+          URL.revokeObjectURL(url);
+        };
+      } else if (payload && payload.json) {
+        const pre = document.createElement("pre");
+        pre.textContent = payload.json;
+        htmlOutput.appendChild(pre);
+      } else {
+        htmlOutput.innerHTML = `
+          <div class="no-app-selected">
+            <img src="/static/logo.png" alt="Neuronum Logo">
+          </div>
+        `;
+      }
     }
-
-    const testData = {
-        label: "test-label",
-        data: {
-            message: "Hello from the frontend!",
-            timestamp: new Date().toISOString()
-        }
-    };
-
-    socket.send(JSON.stringify(testData));
-    log("📤 Sent test data");
-    showCustomAlert("Sent data", "✅ Sent data to websocket");
-}
-
-// Your existing logging function
-function log(message) {
-    const logEl = document.getElementById("log");
-    logEl.textContent += message + "\n";
-}
-
-
-function handleTxResponse(payload) {
-  const htmlOutput = document.getElementById("html-output");
-  htmlOutput.innerHTML = "";
-
-  if (payload && payload.html) {
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("sandbox", "allow-scripts");
-    htmlOutput.appendChild(iframe);
-
-    // Create a Blob URL for the HTML content
-    const blob = new Blob([payload.html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-
-    iframe.src = url;
-
-    // Optional: revoke the object URL when iframe unloads to free memory
-    iframe.onload = () => {
-      URL.revokeObjectURL(url);
-    };
-
-  } else if (payload && payload.json) {
-    const pre = document.createElement("pre");
-    pre.textContent = payload.json;
-    htmlOutput.appendChild(pre);
-  } else {
-    htmlOutput.innerHTML = `
-      <div class="no-app-selected">
-        <img src="/static/logo.png" alt="Neuronum Logo">
-      </div>
-    `;
-  }
-}
-
 
     window.onload = function () {
-      const host = localStorage.getItem('host');
-      const session = localStorage.getItem('session');
+      host = localStorage.getItem('host');
+      session = localStorage.getItem('session');
       const cellHostSpan = document.getElementById('cell-host');
+      nodeListContainer = document.getElementById('node-list');
+      const nodeSearchInput = document.getElementById('node-search');
 
       if (host && cellHostSpan) {
         cellHostSpan.textContent = `${host}`;
@@ -205,217 +332,18 @@ function handleTxResponse(payload) {
         });
       }
 
-      const nodeListContainer = document.getElementById('node-list');
-      const nodeSearchInput = document.getElementById('node-search');
-      let allNodes = [];
-
       if (host && session) {
         fetchNodes();
       } else {
         console.error("Missing Host, Session for node list.");
       }
 
-      nodeSearchInput.addEventListener('input', (event) => {
-        const searchTerm = event.target.value.toLowerCase();
-        renderNodes(searchTerm);
-      });
-
-      async function fetchNodes() {
-        const payload = { host, session };
-
-        try {
-          const response = await fetch("https://neuronum.net/browser/api/list_nodes", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-          });
-
-          const result = await response.json();
-
-          if (!response.ok || !result.success) {
-            const p = document.createElement("p");
-            p.textContent = "Failed to fetch nodes.";
-            nodeListContainer.appendChild(p);
-            return;
-          }
-
-          if (result.Nodes.length === 0) {
-            const p = document.createElement("p");
-            p.textContent = "No nodes available.";
-            nodeListContainer.appendChild(p);
-            return;
-          }
-
-          allNodes = result.Nodes;
-          renderNodes("");
-        } catch (err) {
-          const p = document.createElement("p");
-          p.textContent = "Failed to fetch nodes. Network error.";
-          nodeListContainer.appendChild(p);
-        }
+      if (nodeSearchInput) {
+        nodeSearchInput.addEventListener('input', (event) => {
+          const searchTerm = event.target.value.toLowerCase();
+          renderNodes(searchTerm);
+        });
       }
-
-      function renderNodes(searchTerm) {
-    const nodeListContainer = document.getElementById("node-list");
-    nodeListContainer.innerHTML = '';
-
-    const filteredNodes = allNodes.filter(node => {
-        // Filter out any nodes that do not have the required app_metadata
-        if (!node.config || !node.config.app_metadata) {
-            return false;
-        }
-
-        // Apply the search term filter
-        const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
-        const gatewayInfo = (node.config?.data_gateways || [])
-            .flatMap(g => g.actions || [])
-            .map(a => a.info ? a.info.toLowerCase() : '')
-            .join(' ');
-        const fullText = `${nodeDescription} ${gatewayInfo}`;
-        return fullText.includes(searchTerm.toLowerCase());
-    });
-
-    if (filteredNodes.length === 0) {
-        const p = document.createElement("p");
-        p.textContent = "No Nodes found";
-        nodeListContainer.appendChild(p);
-        return;
-    }
-
-    filteredNodes.forEach(node => {
-        // Create the node-card and its contents only if app_metadata exists
-        if (node.config && node.config.app_metadata) {
-            const nodeCard = document.createElement("div");
-            nodeCard.className = "node-card";
-
-            const title = document.createElement("h4");
-            title.textContent = `${node.config.app_metadata.name}`;
-            nodeCard.appendChild(title);
-
-            const metadataDiv = document.createElement("div");
-            metadataDiv.innerHTML = `
-                <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
-                <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
-            `;
-            nodeCard.appendChild(metadataDiv);
-
-            if (node.config && node.config.legals) {
-                const legalsDiv = document.createElement("div");
-                legalsDiv.innerHTML = `
-                    <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
-                    <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
-                `;
-                nodeCard.appendChild(legalsDiv);
-            }
-
-            if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
-                const gatewayList = document.createElement("ul");
-                gatewayList.style.listStyle = "none";
-                gatewayList.style.paddingLeft = "0";
-
-                const actionsPresent = node.config.data_gateways.some(gateway =>
-                    gateway.id && gateway.id.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0
-                );
-
-                if (actionsPresent) {
-                    const actionsTitle = document.createElement("h4");
-                    actionsTitle.style.marginTop = "25px";
-                    actionsTitle.textContent = "Actions";
-                    nodeCard.appendChild(actionsTitle);
-                }
-
-                node.config.data_gateways.forEach(gateway => {
-                    const gatewayID = gateway.id;
-
-                    if (gatewayID && gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
-                        gateway.actions.forEach(actionItem => {
-                            const li = document.createElement("li");
-                            li.style.marginBottom = "10px";
-
-                            const btn = document.createElement("button");
-                            btn.className = "gateway-btn";
-                            btn.textContent = actionItem.info;
-
-                            btn.addEventListener("click", async () => {
-                                const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
-                                const publicKeyJwk = localStorage.getItem('publicKey');
-                                if (!publicKeyJwk) return;
-
-                                const payloadData = {
-                                    action: actionItem.action,
-                                    publicKey: JSON.parse(publicKeyJwk)
-                                };
-
-                                const payload = {
-                                    data: payloadData,
-                                    host: host,
-                                    session: session
-                                };
-
-                                try {
-                                    const res = await fetch(url, {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify(payload)
-                                    });
-
-                                    if (res.ok) {
-                                        const data = await res.json();
-                                        showCustomAlert("Encrypted Data Received", JSON.stringify(data.response, null, 2));
-                                        if (data.success && data.response) {
-                                            try {
-                                                const decrypted = await decryptPayload(data.response);
-                                                showCustomAlert("Decrypted Data", JSON.stringify(decrypted, null, 2));
-                                                handleTxResponse(decrypted, host, session);
-                                            } catch (decryptError) {
-                                                showCustomAlert("Decryption Failed", decryptError.message);
-                                                handleTxResponse(null, host, session);
-                                            }
-                                        } else {
-                                            handleTxResponse(null, host, session);
-                                        }
-                                    } else {
-                                        showCustomAlert("Fetch Error", `Status: ${res.status}\nMessage: ${res.statusText}`);
-                                        handleTxResponse(null, host, session);
-                                    }
-                                } catch (err) {
-                                    showCustomAlert("Fetch Error", err.message);
-                                    handleTxResponse(null, host, session);
-                                }
-                            });
-
-                            li.appendChild(btn);
-                            gatewayList.appendChild(li);
-                        });
-                    }
-                });
-
-                nodeCard.appendChild(gatewayList);
-
-            } else {
-                const p = document.createElement("p");
-                p.textContent = "(no gateways)";
-                nodeCard.appendChild(p);
-            }
-
-            nodeListContainer.appendChild(nodeCard);
-        }
-    });
-}
-
-  const connectButton = document.getElementById('connect-ws-btn');
-    if (connectButton) {
-        connectButton.addEventListener('click', connectWebSocket);
-    }
-    
-    const sendButton = document.getElementById('send-data-btn');
-    if (sendButton) {
-        sendButton.addEventListener('click', sendData);
-    }
     };
 
     const fullscreenToggle = document.getElementById("fullscreen-toggle");
@@ -436,293 +364,175 @@ function handleTxResponse(payload) {
       });
     }
 
-window.addEventListener('message', async (event) => {
-    const message = event.data;
+    window.addEventListener('message', async (event) => {
+      const message = event.data;
 
-    if (message?.type === 'iframe_request') {
-        const { endpoint, data } = message;
-        console.log("Received iframe_request from child. Endpoint:", endpoint, "Data:", data);
+      if (message?.type === 'iframe_request') {
+        const {
+          endpoint,
+          data
+        } = message;
 
         const host = localStorage.getItem('host');
         const session = localStorage.getItem('session');
         const publicKeyJwk = localStorage.getItem('publicKey');
 
         if (!host || !session) {
-            console.error("Missing host or session in localStorage. Cannot proceed.");
-            showCustomAlert("Authentication Error", "Missing host or session data.");
-            return;
+          showCustomAlert("Authentication Error", "Missing host or session data.");
+          return;
         }
 
         if (!publicKeyJwk) {
-            console.error("No public key found in localStorage!");
-            showCustomAlert("Encryption Error", "No public key found in localStorage.");
-            return;
+          showCustomAlert("Encryption Error", "No public key found in localStorage.");
+          return;
         }
 
         try {
-            const payload = {
-                data: {
-                    ...data, 
-                    publicKey: JSON.parse(publicKeyJwk)
-                },
-                host: host,
-                session: session
-            };
-            console.log("Sending API request with payload:", payload);
+          const payload = {
+            data: {
+              ...data,
+              publicKey: JSON.parse(publicKeyJwk)
+            },
+            host: host,
+            session: session
+          };
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
+          }
+
+          const apiResponse = await response.json();
+
+          if (apiResponse.success && apiResponse.response) {
+            const decrypted = await decryptPayload(apiResponse.response);
+            handleTxResponse(decrypted, host, session);
+
+            const iframe = document.querySelector('iframe');
+            if (iframe?.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'api_response',
+                data: decrypted
+              }, '*');
             }
-
-            const apiResponse = await response.json();
-            console.log('API call handled by parent:', apiResponse);
-
-            if (apiResponse.success && apiResponse.response) {
-                console.log("API response is successful. Proceeding with decryption.");
-                const decrypted = await decryptPayload(apiResponse.response);
-                console.log("Decrypted iframe response:", decrypted);
-                
-                handleTxResponse(decrypted, host, session);
-
-                const iframe = document.querySelector('iframe');
-                if (iframe?.contentWindow) {
-                    iframe.contentWindow.postMessage({
-                        type: 'api_response',
-                        data: decrypted
-                    }, '*');
-                }
-            } else {
-                console.log("API response was not successful or did not contain a valid payload.");
-                handleTxResponse(null, host, session);
-
-                const iframe = document.querySelector('iframe');
-                if (iframe?.contentWindow) {
-                    iframe.contentWindow.postMessage({
-                        type: 'api_response_error',
-                        message: 'No valid response data found.'
-                    }, '*');
-                }
-            }
-        } catch (error) {
-            console.error('API request failed in parent:', error);
-            showCustomAlert("API Request Failed", `An error occurred: ${error.message}`);
+          } else {
             handleTxResponse(null, host, session);
 
             const iframe = document.querySelector('iframe');
             if (iframe?.contentWindow) {
-                iframe.contentWindow.postMessage({
-                    type: 'api_response_error',
-                    message: `API request failed: ${error.message}`
-                }, '*');
+              iframe.contentWindow.postMessage({
+                type: 'api_response_error',
+                message: 'No valid response data found.'
+              }, '*');
             }
+          }
+        } catch (error) {
+          showCustomAlert("API Request Failed", `An error occurred: ${error.message}`);
+          handleTxResponse(null, host, session);
+
+          const iframe = document.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({
+              type: 'api_response_error',
+              message: `API request failed: ${error.message}`
+            }, '*');
+          }
         }
-    }
-});
+      }
+    });
 
-function showCustomAlert(title, message) {
-    const modal = document.getElementById('custom-alert-modal');
-    const content = document.getElementById('alert-content');
-    const modalTitle = modal.querySelector('h4');
-
-    modalTitle.textContent = title;
-    content.textContent = message;
-    modal.style.display = 'flex';
-}
-
-document.getElementById('close-alert-btn').addEventListener('click', () => {
-    document.getElementById('custom-alert-modal').style.display = 'none';
-});
-
-function base64UrlToUint8Array(str) {
-    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    const raw = window.atob(base64);
-    const output = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) {
+    function base64UrlToUint8Array(str) {
+      const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      const raw = window.atob(base64);
+      const output = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
         output[i] = raw.charCodeAt(i);
+      }
+      return output;
     }
-    return output;
-}
 
-async function decryptPayload(encryptedPayload) {
-    try {
-        console.log("Starting decryption process...");
+    async function decryptPayload(encryptedPayload) {
+      try {
         showCustomAlert("Decryption Status", "Starting decryption process...");
 
         const privateKeyJwk = JSON.parse(localStorage.getItem('privateKey'));
         if (!privateKeyJwk) {
-            console.error("Private key not found in localStorage.");
-            showCustomAlert("Decryption Failed", "Private key not found in localStorage.");
-            throw new Error("Private key not found in localStorage.");
+          showCustomAlert("Decryption Failed", "Private key not found in localStorage.");
+          throw new Error("Private key not found in localStorage.");
         }
-        console.log("Private key loaded from localStorage.");
-        showCustomAlert("Decryption Status", "Private key loaded from localStorage.");
 
         const privateKey = await window.crypto.subtle.importKey(
-            "jwk",
-            privateKeyJwk,
-            { name: "ECDH", namedCurve: "P-256" },
-            true,
-            ["deriveKey", "deriveBits"]
+          "jwk",
+          privateKeyJwk, {
+            name: "ECDH",
+            namedCurve: "P-256"
+          },
+          true,
+          ["deriveKey", "deriveBits"]
         );
-        console.log("Client's private key imported.");
-        showCustomAlert("Decryption Status", "Client's private key imported.");
 
         const ephemeralPublicKeyBytes = base64UrlToUint8Array(encryptedPayload.ephemeralPublicKey);
         const ephemeralPublicKey = await window.crypto.subtle.importKey(
-            "raw",
-            ephemeralPublicKeyBytes,
-            { name: "ECDH", namedCurve: "P-256" },
-            true,
-            []
+          "raw",
+          ephemeralPublicKeyBytes, {
+            name: "ECDH",
+            namedCurve: "P-256"
+          },
+          true, []
         );
-        console.log("Server's ephemeral public key imported.");
-        showCustomAlert("Decryption Status", "Server's ephemeral public key imported.");
 
-        const sharedSecret = await window.crypto.subtle.deriveBits(
-            {
-                name: "ECDH",
-                public: ephemeralPublicKey
-            },
-            privateKey,
-            256
+        const sharedSecret = await window.crypto.subtle.deriveBits({
+          name: "ECDH",
+          public: ephemeralPublicKey
+        },
+          privateKey,
+          256
         );
-        console.log("Shared secret derived.");
-        showCustomAlert("Decryption Status", "Shared secret derived.");
 
-        const aesKey = await window.crypto.subtle.deriveKey(
-            {
-                name: "HKDF",
-                salt: new Uint8Array(),
-                info: new TextEncoder().encode("handshake data"),
-                hash: "SHA-256",
-            },
-            await window.crypto.subtle.importKey("raw", sharedSecret, { name: "HKDF" }, false, ["deriveKey"]),
-            { name: "AES-GCM", length: 256 },
-            true,
-            ["decrypt"]
+        const aesKey = await window.crypto.subtle.deriveKey({
+          name: "HKDF",
+          salt: new Uint8Array(),
+          info: new TextEncoder().encode("handshake data"),
+          hash: "SHA-256",
+        },
+          await window.crypto.subtle.importKey("raw", sharedSecret, {
+            name: "HKDF"
+          }, false, ["deriveKey"]), {
+            name: "AES-GCM",
+            length: 256
+          },
+          true, ["decrypt"]
         );
-        console.log("AES-GCM key derived.");
-        showCustomAlert("Decryption Status", "AES-GCM key derived.");
 
         const nonce = base64UrlToUint8Array(encryptedPayload.nonce);
         const ciphertext = base64UrlToUint8Array(encryptedPayload.ciphertext);
 
-        const decryptedBytes = await window.crypto.subtle.decrypt(
-            {
-                name: "AES-GCM",
-                iv: nonce,
-            },
-            aesKey,
-            ciphertext
+        const decryptedBytes = await window.crypto.subtle.decrypt({
+          name: "AES-GCM",
+          iv: nonce,
+        },
+          aesKey,
+          ciphertext
         );
-        console.log("Ciphertext decrypted successfully.");
-        showCustomAlert("Decryption Status", "Ciphertext decrypted successfully.");
 
         const decryptedString = new TextDecoder().decode(decryptedBytes);
         const finalResult = JSON.parse(decryptedString);
-        console.log("Decryption complete. Final result:", finalResult);
         showCustomAlert("Decryption Success!", "Data has been successfully decrypted.");
 
         return finalResult;
-    } catch (error) {
-        console.error("Decryption failed:", error);
+      } catch (error) {
         showCustomAlert("Decryption Failed", `An error occurred: ${error.message}`);
         throw error;
+      }
     }
-}
-
-let stxSocket = null;
-const stxDataElement = document.getElementById("stx-data");
-
-function openStx() {
-    const host = localStorage.getItem('host');
-    const session = localStorage.getItem('session');
-
-    if (!host || !session) return;
-
-    if (stxSocket?.readyState === WebSocket.OPEN) return;
-
-    const stxUrl = `wss://neuronum.net/api/sync/private`;
-
-    console.log("Attempting to connect to:", stxUrl);
-
-    try {
-        stxSocket = new WebSocket(stxUrl);
-    } catch (error) {
-        console.error("Failed to create WebSocket:", error);
-        return;
-    }
-
-    stxSocket.onopen = function () {
-        console.log("WebSocket connection established.");
-
-        const authPayload = {
-            host: host,
-            session: session
-        };
-        stxSocket.send(JSON.stringify(authPayload));
-        console.log("Sent initial authentication payload.");
-    };
-
-    stxSocket.onmessage = function (event) {
-        try {
-            const notification = JSON.parse(event.data);
-            showCustomAlert("Data Received", JSON.parse(event.data));
-
-            if (notification.label === 'notification') {
-                const card = document.createElement("div");
-                card.className = "notification-card";
-
-                const title = document.createElement("h4");
-                title.className = "notification-title";
-                title.textContent = notification.title || "Notification";
-                card.appendChild(title);
-
-                const message = document.createElement("p");
-                message.className = "notification-message";
-                message.textContent = notification.message || "No message content.";
-                card.appendChild(message);
-
-                const time = document.createElement("span");
-                time.className = "notification-time";
-                time.textContent = notification.time || new Date().toLocaleString();
-                card.appendChild(time);
-
-                stxDataElement.prepend(card);
-            }
-        } catch (e) {
-            console.error("Failed to parse WebSocket message:", e);
-        }
-    };
-
-    stxSocket.onclose = function (event) {
-        console.log("WebSocket connection closed:", event);
-        const reason = event.reason || "No reason given.";
-        showCustomAlert("Connection Closed", `Stream STX WebSocket connection closed.\nCode: ${event.code}\nReason: ${reason}`);
-        stxSocket = null;
-
-        setTimeout(openStx, 5000);
-    };
-
-    stxSocket.onerror = function (error) {
-        console.error("WebSocket error:", error);
-        showCustomAlert("WebSocket Error", "An error occurred with the stream connection. See console for details.");
-    };
-}
-
-window.addEventListener("load", () => {
-    openStx();
-});
-
   </script>
 </body>
 </html>

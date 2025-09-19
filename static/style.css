@@ -492,6 +492,44 @@
       color: black;
     }
 
+    #delete-cell {
+      padding: 10px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      background-color: #1c1c1c;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      display: flex;
+      text-decoration: none;
+    }
+     
+    #delete-cell:hover {
+      background-color: #fe4646;
+      color: black;
+    }
+
+     #update-nodes a {
+      text-decoration: none;
+    }
+
+    #update-nodes {
+      padding: 10px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      background-color: #1c1c1c;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      display: flex;
+      text-decoration: none;
+    }
+    
+    #update-nodes:hover {
+      background-color: #9bf395;
+      color: black;
+    }
+
     .cell-id-card {
       grid-column: 1;
       grid-row: 1;
@@ -510,12 +548,6 @@
       overflow-y: auto;
     }
 
-    .contacts-card {
-      grid-column: 3;
-      grid-row: 2 / 5;
-      overflow-y: auto;
-      width: 250px;
-    }
 
     .node-screen-card {
       grid-column: 2;
@@ -595,13 +627,6 @@
       flex-direction: column;
       gap: 18px;
     }
-
-     .contacts-container {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
 
     .search-container {
       margin-top: 10px;
@@ -708,43 +733,6 @@
 
     #stx-data::-webkit-scrollbar {
       display: none;
-    }
-
-    .notification-card {
-        background-color: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 15px;
-        word-wrap: break-word;
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        color: #eaeaea;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        width: 250px;
-    }
-
-    .notification-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .notification-title {
-        margin: 0 0 5px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #01c07d;
-    }
-
-    .notification-message {
-        margin: 0 0 10px;
-        opacity: 0.9;
-    }
-
-    .notification-time {
-        font-size: 12px;
-        opacity: 0.6;
-        display: block;
-        text-align: right;
     }
 
     a {
