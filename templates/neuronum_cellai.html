@@ -147,7 +147,7 @@
             gatewayList.style.paddingLeft = "0";
 
             const actionsPresent = node.config.data_gateways.some(gateway =>
-              gateway.id && gateway.id.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0
+              gateway.node_id && gateway.node_id.endsWith("::node") && Array.isArray(gateway.actions) && gateway.actions.length > 0
             );
 
             if (actionsPresent) {
@@ -158,9 +158,9 @@
             }
 
             node.config.data_gateways.forEach(gateway => {
-              const gatewayID = gateway.id;
+              const gatewayID = gateway.node_id;
 
-              if (gatewayID && gatewayID.endsWith("::tx") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
+              if (gatewayID && gatewayID.endsWith("::node") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
                 gateway.actions.forEach(actionItem => {
                   const li = document.createElement("li");
                   li.style.marginBottom = "10px";
@@ -170,7 +170,7 @@
                   btn.textContent = actionItem.info;
 
                   btn.addEventListener("click", async () => {
-                    const url = `https://neuronum.net/api/activate/${encodeURIComponent(gatewayID)}`;
+                    const url = `https://neuronum.net/browser/api/activate_tx/${encodeURIComponent(gatewayID)}`;
                     const publicKeyJwk = localStorage.getItem('publicKey');
                     if (!publicKeyJwk) return;
 

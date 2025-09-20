@@ -110,8 +110,24 @@
             if (result.host) {
               localStorage.setItem('host', result.host);
               localStorage.setItem('guest', "True");
-            }
+
+               const keyPair = await window.crypto.subtle.generateKey(
+                {
+                  name: "ECDH",
+                  namedCurve: "P-256",
+                },
+                true,
+                ["deriveKey", "deriveBits"]
+              );
+
+              const privateKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+              const publicKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+              localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
+              localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
+
             window.location.href = '/neuronum_cellai';
+            }
           } else {
             const error = await response.json();
             console.error('Verification failed:', error);
