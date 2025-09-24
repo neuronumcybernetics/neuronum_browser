@@ -35,7 +35,6 @@ if __name__ == '__main__':
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-
     webview.create_window('Neuronum Network v1.0.0','http://127.0.0.1:55000',width=1280,height=800,resizable=True)
     webview.start()
 
