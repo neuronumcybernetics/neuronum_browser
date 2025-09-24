@@ -15,6 +15,42 @@
       background: #000000;
     }
 
+    .create-cell-container-choose {
+        margin-top: 60px;
+        grid-row: span 11 / auto;
+        grid-column: span 2 / auto;  
+        display: flex;
+        gap: 30px;
+        justify-content: center; 
+      }
+
+    .create-cell-chooser {
+        border-radius: 20px;
+        border: 1px solid #232323;
+        transition: all 100ms;
+        position: relative;
+        background: #020202;
+        height: 550px;
+        width: 450px;
+    }
+
+
+    .create-cell-chooser:hover {
+      transform: scale(0.98);
+        background: linear-gradient(45deg, rgb(41, 41, 41, 0.5), rgba(7, 7, 7, 0.2));
+    }
+
+    .use-case-meta {
+      color: rgb(146, 146, 146);
+      font-family: 'inter';
+      font-size: 20px;
+      margin-top: 20px;
+      margin-left: 30px;
+      margin-right: 25px;
+      text-align: left;
+      line-height: 1.38;
+    }
+
     .github-icon {
       position: fixed;
       left: 20px;
@@ -75,7 +111,7 @@
       margin-top: 25px;
       display: flex;
       justify-content: space-between;
-      width: 490px;
+      width: 500px;
     }
 
     .link {
@@ -224,6 +260,21 @@
       border: 1px solid #ffffff;
     }
 
+     .create-card {
+      border-radius: 20px;
+      border: 1px solid #232323;
+      transition: all 100ms;
+      position: relative;
+      background: #020202;
+      width: 800px;
+      height: 600px;
+    }
+
+    .create-card:hover {
+      transform: scale(0.98);
+      border: 1px solid #ffffff;
+    }
+
     .card-title {
       color: white;
       font-weight: 500;
@@ -264,6 +315,60 @@
       flex-wrap: wrap;
     }
 
+    .create-input-container {
+      border-radius: 30px;
+      transition: all 400ms;
+      margin-top: 40px; 
+      margin-left: 200px;
+      margin-right: 200px;
+      flex-wrap: wrap;
+    }
+
+    #logo-preview-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%; 
+      overflow: hidden;
+      border: 2px solid #ccc;
+      margin-left: auto;  
+      margin-right: auto; 
+    }
+
+    .logo-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+    }
+
+    #logo-placeholder {
+      width: 60px;
+      object-fit: cover;
+      opacity: 0.5;
+      position: absolute;
+    }
+
+    .upload-logo {
+      border-radius: 18px;
+      width: 405px;
+      height: 70px;
+      transition: all 200ms;
+      background: none;
+      font-size: 18px;
+      border: none;
+      text-align: center;
+      color: rgb(255, 255, 255);
+      cursor: pointer;
+    }
+
+    .upload-hidden {
+      display: none;
+    }
+
     .connect-input {
       border-radius: 18px;
       width: 400px;
@@ -282,6 +387,7 @@
       font-family: 'inter';
       padding: 15px;
       border-radius: 10px;
+      background-color: white;
       border: none;
       font-size: 16px;
       bottom: 30px;
@@ -745,4 +851,66 @@
 
     i {
       text-decoration: none;
+    }
+
+
+    .custom-alert {
+      display: none;
+      position: fixed;
+      bottom: 65px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 360px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      border: 1px solid #232323;
+      padding: 20px;
+      border-radius: 15px;
+      flex-direction: column;
+      transition: bottom 1s ease;
+    }
+
+    .custom-alert-meta {
+      color: rgb(146, 146, 146);
+      font-size: 15px;
+      font-weight: 400;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .custom-alert-title {
+      color: rgb(255, 255, 255);
+      font-size: 18px;
+      font-weight: 400;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .custom-alert-meta a {
+      text-decoration: none;
+      color: inherit;
+      font-weight: 600;
+    }
+
+    .custom-alert-meta a:link,
+    .custom-alert-meta a:visited {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .alert-close {
+      font-size: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      color: white;
+      padding: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .alert-close i {
+      margin-left: 5px;
     }

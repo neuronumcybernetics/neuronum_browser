@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 
   <body class="page-container">
@@ -28,8 +28,8 @@
     <main class="hero-card">
       <img src="/static/logo.png" alt="Neuronum Logo" class="hero-logo">
       <div class="hero-title">
-        <em><b>NEURONUM BROWSER v1.0.0</b></em><br>
-        <b>THE REAL-TIME E2E BROWSER</b>
+        <em><b>NEURONUM NETWORK vZERO.ZERO.ONE</b></em><br>
+        <b>THE REAL-TIME E2E WEB</b>
       </div>
       <div class="link-container">
         <a href="/connect_cell" class="link">
@@ -65,8 +65,24 @@
       </button>
     </div>
 
+
+    <div id="customAlert" class="custom-alert">
+      <div class="custom-alert-title">
+      Alert Title
+      </div>
+      <div class="custom-alert-meta">
+      Alert!
+      and the collection and use of data as described in our
+      </div>
+      <button class="alert-close" id="alertClose">
+        <span>close window<i class="fas fa-long-arrow-alt-right"></i></span>
+      </button>
+    </div>
+
   <script>
     window.onload = function() {
+      const { invoke } = window.__TAURI__.core;
+
       const popup = document.getElementById('termspopup');
       const closeBtn = document.getElementById('termsclose');
       const currentDate = new Date().getTime();
@@ -126,19 +142,39 @@
               localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
               localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
 
-            window.location.href = '/neuronum_cellai';
+            window.location.href = '/browser';
             }
           } else {
             const error = await response.json();
             console.error('Verification failed:', error);
-            alert(error.message || "Connection failed");
+            showCustomAlert("Connection Failed", error.message || "Could not connect as guest.");
           }
         } catch (err) {
           console.error("Error submitting form:", err);
-          alert("An error occurred while verifying the cell key.");
+          showCustomAlert("Error", "An unexpected error occurred while verifying the cell key.");
         }
       });
     }
+
+        function showCustomAlert(title, message) {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.querySelector('.custom-alert-title').innerText = title;
+        alertBox.querySelector('.custom-alert-meta').innerText = message;
+        alertBox.style.display = 'flex';
+
+        setTimeout(() => {
+          alertBox.style.opacity = 1;
+        }, 10);
+      }
+
+        document.getElementById('alertClose').addEventListener('click', () => {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.style.opacity = 0;
+        setTimeout(() => {
+          alertBox.style.display = 'none';
+        }, 300);
+      });
+
   </script>
 
 </body>

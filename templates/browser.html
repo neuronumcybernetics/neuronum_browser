@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="/static/favicon.png" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 
@@ -39,6 +39,20 @@
     </button>
   </div>
 
+   <div id="customAlert" class="custom-alert">
+      <div class="custom-alert-title">
+      Alert Title
+      </div>
+      <div class="custom-alert-meta">
+      Alert!
+      and the collection and use of data as described in our
+      </div>
+      <button class="alert-close" id="alertClose">
+        <span>close window<i class="fas fa-long-arrow-alt-right"></i></span>
+      </button>
+    </div>
+
+
   <script>
     let allNodes = [];
     let host = null;
@@ -61,14 +75,14 @@
 
         if (!response.ok || !result.success) {
           const p = document.createElement("p");
-          p.textContent = "Failed to fetch nodes.";
+          p.textContent = "No Public Nodes";
           if (nodeListContainer) nodeListContainer.appendChild(p);
           return;
         }
 
         if (result.Nodes.length === 0) {
           const p = document.createElement("p");
-          p.textContent = "No nodes available.";
+          p.textContent = "No Public Nodes";
           if (nodeListContainer) nodeListContainer.appendChild(p);
           return;
         }
@@ -377,7 +391,6 @@
       });
     }
 
-   // ... (rest of your script) ...
 
     window.addEventListener('message', async (event) => {
       const message = event.data;
@@ -399,17 +412,13 @@
         }
 
         try {
-          // --- BEGIN NEW LOGIC FOR ENCRYPTION ---
-          // Convert the node's PEM public key to JWK format
           const nodePublicKeyJwk = await convertPemToJwk(nodePublicKey);
           if (!nodePublicKeyJwk) {
             throw new Error("Failed to convert node public key.");
           }
 
-          // Encrypt the payload data using the node's public key
           const encryptedData = await encryptPayload(data, nodePublicKeyJwk);
 
-          // Build the final payload with the encrypted data
           const payload = {
             data: {
               encrypted: encryptedData,
@@ -625,7 +634,6 @@
     }
 
    async function convertPemToJwk(pem) {
-      // Step 1: Sanitize the PEM string
       const pemContents = pem
         .replace("-----BEGIN PUBLIC KEY-----", "")
         .replace("-----END PUBLIC KEY-----", "")
@@ -633,17 +641,13 @@
         .replace("-----ENDPUBLICKEY-----", "")
         .replace(/\s/g, "");
 
-      // Step 2: Handle potential Base64-URL characters
       const base64 = pemContents.replace(/-/g, '+').replace(/_/g, '/');
 
-      // Step 3: Add padding if necessary
       const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
 
-      // Step 4: Decode the Base64 string to an ArrayBuffer
       try {
         const binaryDer = _base64ToArrayBuffer(paddedBase64);
 
-        // Step 5: Import the key in "spki" format
         const key = await window.crypto.subtle.importKey(
           "spki",
           binaryDer, {
@@ -654,7 +658,6 @@
           []
         );
 
-        // Step 6: Export it to the JWK format
         return await window.crypto.subtle.exportKey("jwk", key);
       } catch (e) {
         console.error("Error converting PEM to JWK:", e);
@@ -671,6 +674,25 @@
       }
       return bytes.buffer;
     }
+
+      function showCustomAlert(title, message) {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.querySelector('.custom-alert-title').innerText = title;
+        alertBox.querySelector('.custom-alert-meta').innerText = message;
+        alertBox.style.display = 'flex';
+
+        setTimeout(() => {
+          alertBox.style.opacity = 1;
+        }, 10);
+      }
+
+        document.getElementById('alertClose').addEventListener('click', () => {
+        const alertBox = document.getElementById('customAlert');
+        alertBox.style.opacity = 0;
+        setTimeout(() => {
+          alertBox.style.display = 'none';
+        }, 300);
+      });
   </script>
 </body>
 </html>
