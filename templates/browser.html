@@ -52,6 +52,21 @@
       </button>
     </div>
 
+  <div id="deleteAlert" class="custom-alert">
+    <div class="custom-alert-content">
+      <div class="custom-alert-title">Alert Title</div>
+      <div class="custom-alert-meta">Alert!</div>
+      <div class="custom-alert-actions">
+        <button class="delete-confirm">
+          <span>Confirm<i class="fas fa-check"></i></span>
+        </button>
+        <button class="delete-close">
+          <span>Cancel<i class="fas fa-times"></i></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 
   <script>
     let allNodes = [];
@@ -261,50 +276,61 @@
       await fetchNodes();
     });
 
-
-   document.getElementById('delete-cell').addEventListener('click', async function (e) {
-    e.preventDefault();
-
-    const session = localStorage.getItem('session');
-    const host = localStorage.getItem('host');
-    const guest = localStorage.getItem('guest');
-
-    if (guest === "True") {
-        localStorage.clear();
-        window.location.href = '/';
-        return;
-    }
-
-    try {
-        const response = await fetch('https://neuronum.net/browser/api/delete_cell', {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            host: host,
-            session: session
-        })
+    const disconnectBtn = document.getElementById("disconnect-btn");
+    if (disconnectBtn) {
+      disconnectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        showCustomAlert('Cell Disconnected', 'disconnected from the Neuronum Network', () => {
+          localStorage.clear();
+          window.location.href = "/";
         });
-
-        const result = await response.json();
-
-        if (response.ok && result.status) {
-        console.log('Cell deleted successfully:', result);
-        localStorage.clear();
-        window.location.href = '/';
-        } else {
-        console.error('Cell deletion failed:', result);
-        alert(result.message || "Deletion failed. Please try again.");
-        }
-
-    } catch (err) {
-        console.error("Error deleting cell:", err);
-        alert("An error occurred while deleting the cell.");
+      });
     }
-    });
 
-
+    const deleteCellBtn = document.getElementById("delete-cell");
+      if (deleteCellBtn) {
+        deleteCellBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          showDeleteAlert('Delete Cell', 'Are you sure you want to delete this cell? This action is irreversible.', async () => {
+            const session = localStorage.getItem('session');
+            const host = localStorage.getItem('host');
+            const guest = localStorage.getItem('guest');
+        
+            if (guest === "True") {
+              localStorage.clear();
+              window.location.href = '/';
+              return;
+            }
+        
+            try {
+              const response = await fetch('https://neuronum.net/browser/api/delete_cell', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  host: host,
+                  session: session
+                })
+              });
+        
+              const result = await response.json();
+        
+              if (response.ok && result.status) {
+                console.log('Cell deleted successfully:', result);
+                localStorage.clear();
+                window.location.href = '/';
+              } else {
+                console.error('Cell deletion failed:', result);
+                alert(result.message || "Deletion failed. Please try again.");
+              }
+            } catch (err) {
+              console.error("Error deleting cell:", err);
+              alert("An error occurred while deleting the cell.");
+            }
+          });
+        });
+      }
 
     function handleTxResponse(payload) {
       const htmlOutput = document.getElementById("html-output");
@@ -351,14 +377,6 @@
         cellHostSpan.textContent = 'cell not connected';
       }
 
-      const disconnectBtn = document.getElementById("disconnect-btn");
-      if (disconnectBtn) {
-        disconnectBtn.addEventListener("click", () => {
-          localStorage.clear();
-          window.location.href = "/";
-        });
-      }
-
       if (host && session) {
         fetchNodes();
       } else {
@@ -390,7 +408,6 @@
         }
       });
     }
-
 
     window.addEventListener('message', async (event) => {
       const message = event.data;
@@ -479,7 +496,6 @@
       }
     });
 
-
     function base64UrlToUint8Array(str) {
       const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
       const raw = window.atob(base64);
@@ -492,7 +508,6 @@
 
     async function decryptPayload(encryptedPayload) {
       try {
-
         const privateKeyJwk = JSON.parse(localStorage.getItem('privateKey'));
         if (!privateKeyJwk) {
           throw new Error("Private key not found in localStorage.");
@@ -675,7 +690,7 @@
       return bytes.buffer;
     }
 
-      function showCustomAlert(title, message) {
+    function showCustomAlert(title, message, callback) {
         const alertBox = document.getElementById('customAlert');
         alertBox.querySelector('.custom-alert-title').innerText = title;
         alertBox.querySelector('.custom-alert-meta').innerText = message;
@@ -684,15 +699,104 @@
         setTimeout(() => {
           alertBox.style.opacity = 1;
         }, 10);
-      }
-
+        
         document.getElementById('alertClose').addEventListener('click', () => {
-        const alertBox = document.getElementById('customAlert');
+          hideAlert('customAlert');
+          if (callback) {
+            callback();
+          }
+        }, { once: true });
+    }
+
+    function showDeleteAlert(title, message, onConfirm) {
+      const alertBox = document.getElementById('deleteAlert');
+      const confirmBtn = alertBox.querySelector('.delete-confirm');
+      const cancelBtn = alertBox.querySelector('.delete-close');
+
+      alertBox.querySelector('.custom-alert-title').innerText = title;
+      alertBox.querySelector('.custom-alert-meta').innerText = message;
+      alertBox.style.display = 'flex';
+
+      setTimeout(() => {
+        alertBox.style.opacity = 1;
+      }, 10);
+
+      const handleConfirm = () => {
+        onConfirm();
+        hideAlert('deleteAlert');
+        cleanupListeners();
+      };
+
+      const handleCancel = () => {
+        hideAlert('deleteAlert');
+        cleanupListeners();
+      };
+
+      const cleanupListeners = () => {
+        confirmBtn.removeEventListener('click', handleConfirm);
+        cancelBtn.removeEventListener('click', handleCancel);
+      };
+
+      confirmBtn.addEventListener('click', handleConfirm);
+      cancelBtn.addEventListener('click', handleCancel);
+    }
+    
+    function hideAlert(alertBoxId) {
+      const alertBox = document.getElementById(alertBoxId);
+      if (alertBox) {
         alertBox.style.opacity = 0;
         setTimeout(() => {
           alertBox.style.display = 'none';
         }, 300);
+      }
+    }
+
+    document.getElementById('alertClose').addEventListener('click', () => {
+      hideAlert('customAlert');
+    });
+
+    document.getElementById('delete-cell').addEventListener('click', async function (e) {
+      e.preventDefault();
+      showDeleteAlert('Delete Cell', 'Are you sure you want to delete this cell? This action is irreversible.', async () => {
+        const session = localStorage.getItem('session');
+        const host = localStorage.getItem('host');
+        const guest = localStorage.getItem('guest');
+
+        if (guest === "True") {
+          localStorage.clear();
+          window.location.href = '/';
+          return;
+        }
+
+        try {
+          const response = await fetch('https://neuronum.net/browser/api/delete_cell', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              host: host,
+              session: session
+            })
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.status) {
+            console.log('Cell deleted successfully:', result);
+            localStorage.clear();
+            window.location.href = '/';
+          } else {
+            console.error('Cell deletion failed:', result);
+            alert(result.message || "Deletion failed. Please try again.");
+          }
+        } catch (err) {
+          console.error("Error deleting cell:", err);
+          alert("An error occurred while deleting the cell.");
+        }
       });
+    });
+
   </script>
 </body>
 </html>

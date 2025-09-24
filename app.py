@@ -20,10 +20,6 @@ def cellkey():
 def create_cell():
     return render_template('create_cell.html')
 
-@server.route('/create_business_cell')
-def create_business_cell():
-    return render_template('create_business_cell.html')
-
 @server.route('/create_community_cell')
 def create_community_cell():
     return render_template('create_community_cell.html')
@@ -40,6 +36,6 @@ if __name__ == '__main__':
     flask_thread.start()
 
 
-    webview.create_window('Neuronum Browser v1.0.0','http://127.0.0.1:55000',width=1280,height=800,resizable=True)
+    webview.create_window('Neuronum Network v1.0.0','http://127.0.0.1:55000',width=1280,height=800,resizable=True)
     webview.start()
 

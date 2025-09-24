@@ -29,7 +29,7 @@
       <img src="/static/logo.png" alt="Neuronum Logo" class="hero-logo">
       <div class="hero-title">
         <em><b>NEURONUM NETWORK vZERO.ZERO.ONE</b></em><br>
-        <b>THE REAL-TIME E2E WEB</b>
+        <b>THE E2E WEB ENGINE</b>
       </div>
       <div class="link-container">
         <a href="/connect_cell" class="link">
@@ -38,8 +38,8 @@
         <a href="/create_cell" class="link">
           CREATE CELL <i class="fas fa-long-arrow-alt-right"></i>
         </a>
-        <a href="#" class="link" id="connect-as-guest">
-          CONNECT AS GUEST <i class="fas fa-long-arrow-alt-right"></i>
+        <a href="https://github.com/neuronumcybernetics/neuronum" class="link" target="_blank" id="connect-as-guest">
+          BUILD ON NEURONUM<i class="fas fa-long-arrow-alt-right"></i>
         </a>
       </div>
     </main>
@@ -104,77 +104,6 @@
         }, 500);
       };
     };
-
-    const connectGuestButton = document.getElementById("connect-as-guest");
-    if (connectGuestButton) {
-      connectGuestButton.addEventListener("click", async (e) => {
-        e.preventDefault();
-        try {
-          const response = await fetch('https://neuronum.net/api/connect_guest', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('Verification successful:', result);
-            if (result.session) {
-              localStorage.setItem('session', result.session);
-            }
-            if (result.host) {
-              localStorage.setItem('host', result.host);
-              localStorage.setItem('guest', "True");
-
-               const keyPair = await window.crypto.subtle.generateKey(
-                {
-                  name: "ECDH",
-                  namedCurve: "P-256",
-                },
-                true,
-                ["deriveKey", "deriveBits"]
-              );
-
-              const privateKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
-              const publicKeyJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
-
-              localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
-              localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
-
-            window.location.href = '/browser';
-            }
-          } else {
-            const error = await response.json();
-            console.error('Verification failed:', error);
-            showCustomAlert("Connection Failed", error.message || "Could not connect as guest.");
-          }
-        } catch (err) {
-          console.error("Error submitting form:", err);
-          showCustomAlert("Error", "An unexpected error occurred while verifying the cell key.");
-        }
-      });
-    }
-
-        function showCustomAlert(title, message) {
-        const alertBox = document.getElementById('customAlert');
-        alertBox.querySelector('.custom-alert-title').innerText = title;
-        alertBox.querySelector('.custom-alert-meta').innerText = message;
-        alertBox.style.display = 'flex';
-
-        setTimeout(() => {
-          alertBox.style.opacity = 1;
-        }, 10);
-      }
-
-        document.getElementById('alertClose').addEventListener('click', () => {
-        const alertBox = document.getElementById('customAlert');
-        alertBox.style.opacity = 0;
-        setTimeout(() => {
-          alertBox.style.display = 'none';
-        }, 300);
-      });
-
   </script>
 
 </body>

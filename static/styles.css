@@ -30,7 +30,7 @@
         transition: all 100ms;
         position: relative;
         background: #020202;
-        height: 550px;
+        height: 450px;
         width: 450px;
     }
 
@@ -108,10 +108,10 @@
     }
 
     .link-container {
-      margin-top: 25px;
+      margin-top: 15px;
       display: flex;
       justify-content: space-between;
-      width: 500px;
+      width: 475px;
     }
 
     .link {

@@ -35,20 +35,6 @@
         <button type="button" id="createCellCommunity" class="submit-button">create cell</button>
       </div>
 
-      <div class="create-cell-chooser">
-        <div class="card-title">BUSINESS</div>
-        <div class="card-meta">business cell</div>
-        <div class="use-case-meta" style="color: rgb(255, 255, 255); font-weight: 500">
-          For Businesses ready to develop, deploy and connect Data on Neuronum
-          <br><br class="desktop">
-          <ul>
-            <li>🛠️ Access to Nodes, Library, CLI-Tools</li><br>
-            <li>🌐 Build private, public and partner Nodes and Data Streams</li><br>
-          </ul>
-        </div>
-        <button type="button" id="createCellBusiness" class="submit-button">request cell</button>
-      </div>
-
     </div>
 
 
@@ -70,11 +56,6 @@
 
     document.getElementById('createCellCommunity').addEventListener('click', function() {
         const url = `/create_community_cell`;
-          window.location.href = url;
-    });
-
-    document.getElementById('createCellBusiness').addEventListener('click', function() {
-        const url = `/create_business_cell`;
           window.location.href = url;
     });
     </script>
