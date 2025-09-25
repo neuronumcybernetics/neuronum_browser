@@ -25,11 +25,7 @@
 An real-time E2E Browser built on the [Neuronum network](https://github.com/neuronumcybernetics/neuronum)
 
 ### Requirements
-- Python installed
-
-```sh
-pip install pyinstaller
-```
+Python installed
 
 ------------------
 
@@ -49,6 +45,10 @@ clone https://github.com/neuronumcybernetics/browser
 ------------------
 
 ### **Build the Browser**
+```sh
+pip install pyinstaller
+```
+
 ```sh
 pyinstaller \                                                                                        
   --windowed \
