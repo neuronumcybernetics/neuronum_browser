@@ -45,6 +45,11 @@ cd neuronum_browser
 pip install pyinstaller
 ```
 
+Pillow handles the formatting of the icon.icns file
+```sh
+pip install Pillow
+```
+
 ```sh
 pyinstaller --windowed --name "Neuronum Browser" --icon=icon.icns --add-data=templates:templates --add-data=static:static app.py
 ```
