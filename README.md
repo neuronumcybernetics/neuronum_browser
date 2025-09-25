@@ -42,13 +42,9 @@ cd neuronum_browser
 
 ### **Build the Browser**
 ```sh
-pip install pyinstaller
+pip install pyinstaller, Pillow, flask, webview, dotenv
 ```
 
-Pillow handles the formatting of the icon.icns file
-```sh
-pip install Pillow
-```
 
 ```sh
 pyinstaller --windowed --name "Neuronum Browser" --icon=icon.icns --add-data=templates:templates --add-data=static:static app.py
