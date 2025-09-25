@@ -42,10 +42,8 @@ cd neuronum_browser
 
 ### **Build the Browser**
 ```sh
-pip install pyinstaller, Pillow, flask, webview, dotenv
+pip install pyinstaller, Pillow, flask, pywebview, python-dotenv
 ```
-
-!if you are working on Windows you need to install Microsoft C++ Build Tools!
 
 ```sh
 pyinstaller --windowed --name "Neuronum Browser" --icon=icon.icns --add-data=templates:templates --add-data=static:static app.py
