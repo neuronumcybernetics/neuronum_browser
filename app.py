@@ -4,7 +4,6 @@ import threading
 from pathlib import Path
 from dotenv import load_dotenv
 import os
-import requests
 
 server = Flask(__name__, static_folder='./static', template_folder='./templates')
 

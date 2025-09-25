@@ -340,7 +340,7 @@
 
       if (payload && payload.html) {
         const iframe = document.createElement("iframe");
-        iframe.setAttribute("sandbox", "allow-popups");
+        iframe.setAttribute("sandbox", "allow-popups allow-scripts");
         htmlOutput.appendChild(iframe);
 
         const blob = new Blob([payload.html], {
