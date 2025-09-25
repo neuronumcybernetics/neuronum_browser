@@ -39,7 +39,7 @@ cd neuronum_browser
 ```
 
 ```sh
-git clone https://github.com/neuronumcybernetics/neuronum-browser
+git clone https://github.com/neuronumcybernetics/neuronum_browser
 ```
 
 ------------------
@@ -50,10 +50,5 @@ pip install pyinstaller
 ```
 
 ```sh
-pyinstaller \                                                                          --windowed \
---name "Neuronum Browser" \
---icon=icon.icns \
---add-data=templates:templates \
---add-data=static:static \
-app.py
+pyinstaller --windowed --name "Neuronum Browser" --icon=icon.icns --add-data=templates:templates --add-data=static:static app.py
 ```
