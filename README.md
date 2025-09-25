@@ -29,17 +29,13 @@ Python installed
 
 ------------------
 
-### **Create Directory**
+### **Clone Repo**
 ```sh
-mkdir neuronum_browser
+git clone https://github.com/neuronumcybernetics/neuronum_browser
 ```
 
 ```sh
 cd neuronum_browser
-```
-
-```sh
-git clone https://github.com/neuronumcybernetics/neuronum_browser
 ```
 
 ------------------
