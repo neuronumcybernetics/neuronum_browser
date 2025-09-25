@@ -28,8 +28,13 @@
 
       <form id="connectCellForm" action="/connectCell" method="post" enctype="multipart/form-data">
         <div class="connect-input-container">
+          {% if password and email %}
+          <input type="email" class="connect-input" id="email" name="email" style="color: white;" placeholder="email address" value="{{ email }}" required>
+          <input type="password" class="connect-input" id="password" name="password" style="color: white;" placeholder="password" value="{{ password }}" required>
+          {% else %}
           <input type="email" class="connect-input" id="email" name="email" style="color: white;" placeholder="email address" required>
           <input type="password" class="connect-input" id="password" name="password" style="color: white;" placeholder="password" required>
+          {% endif %}
         </div>
         <button type="button" id="connectCell" class="submit-button">connect</button>
       </form>
@@ -110,6 +115,7 @@
         if (data.host) {
           localStorage.setItem('email', email);
           localStorage.setItem('host', data.host);
+          localStorage.setItem('password', password);
           window.location.href = '/cellkey';
         } else {
           showCustomAlert("Login Failed", data.message || "Please check your credentials.");

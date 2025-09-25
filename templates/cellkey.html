@@ -78,12 +78,16 @@
       </button>
     </div>
 
- <script>
-  window.onload = function () {
-    const email = localStorage.getItem('email');
-    document.getElementById('email').textContent = email || 'no mail';
-  };
+ 
+    <script>
+      window.onload = function () {
+        const email = localStorage.getItem('email');
+        document.getElementById('email').textContent = email || 'no mail';
+      };
+  </script>
 
+
+ <script>
   document.getElementById('validateCellKeyForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -117,9 +121,10 @@
 
       const result = await response.json();
 
-      if (response.ok && result.session) {
+      if (response.ok && result.session && result.synapse) {
         console.log('Verification successful:', result);
         localStorage.setItem('session', result.session);
+        localStorage.setItem('synapse', result.synapse);
 
         const keyPair = await window.crypto.subtle.generateKey(
           {
@@ -135,7 +140,7 @@
 
         localStorage.setItem('privateKey', JSON.stringify(privateKeyJwk));
         localStorage.setItem('publicKey', JSON.stringify(publicKeyJwk));
-
+        sendCredentials();
         window.location.href = '/browser';
 
       } else {
@@ -165,6 +170,41 @@
       alertBox.style.display = 'none';
     }, 300);
   });
+
+  async function sendCredentials() {
+    const email = localStorage.getItem('email');
+    const host = localStorage.getItem('host');
+    const password = localStorage.getItem('password');
+    const synapse = localStorage.getItem('synapse');
+
+    const data = {
+      email: email,
+      host: host,
+      password: password,
+      synapse: synapse
+    };
+
+    try {
+      const response = await fetch('/store_credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      console.log(result);
+
+      if (response.ok) {
+        console.log('Success:', result.message);
+      } else {
+        showCustomAlert("Error", result.message || "Failed to save credentials.");
+      }
+    } catch (error) {
+      showCustomAlert("Connection Error", "An error occurred while connecting to the server.");
+    }
+  }
 </script>
 
 

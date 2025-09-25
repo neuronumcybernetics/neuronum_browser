@@ -182,6 +182,7 @@
         if (data.host) {
           localStorage.setItem('email', email);
           localStorage.setItem('host', data.host);
+          localStorage.setItem('password', password);
           window.location.href = '/cellkey';
         } else {
           showCustomAlert("Account creation failed", data.message);
