@@ -47,4 +47,4 @@ pip install pyinstaller, Pillow, flask, pywebview, python-dotenv
 
 ```sh
 pyinstaller --windowed --name "Neuronum Browser" --icon=icon.icns --add-data=templates:templates --add-data=static:static app.py
-```
+```# neuronum_browser
