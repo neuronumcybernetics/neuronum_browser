@@ -22,7 +22,7 @@
 ------------------
 
 ### **About the Neuronum Browser**
-An real-time E2E Browser built on the [Neuronum network](https://github.com/neuronumcybernetics/neuronum)
+An E2E Browser built on the [Neuronum network](https://github.com/neuronumcybernetics/neuronum)
 
 ### Requirements
 Python installed
