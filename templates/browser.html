@@ -146,6 +146,13 @@
           const nodeCard = document.createElement("div");
           nodeCard.className = "node-card";
 
+          const logo = document.createElement("img");
+          logo.src = node.config.app_metadata.logo;
+          logo.alt = `${node.config.app_metadata.name} logo`;
+          logo.className = "node-logo";
+          nodeCard.appendChild(logo);
+
+
           const title = document.createElement("h4");
           title.textContent = `${node.config.app_metadata.name}`;
           nodeCard.appendChild(title);
