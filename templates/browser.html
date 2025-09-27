@@ -114,171 +114,128 @@
     }
 
     function renderNodes(searchTerm) {
-      if (!nodeListContainer) return;
+  if (!nodeListContainer) return;
 
-      nodeListContainer.innerHTML = '';
+  nodeListContainer.innerHTML = '';
 
-      const filteredNodes = allNodes.filter(node => {
-        if (!node.config || !node.config.app_metadata || !node.config.public_key) {
-          return false;
-        }
+  const filteredNodes = allNodes.filter(node => {
+    if (!node.config || !node.config.app_metadata || !node.config.public_key) {
+      return false;
+    }
 
-        const nodePublicKey = node.config?.public_key.toLowerCase() || '';
-        const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
-        const gatewayInfo = (node.config?.data_gateways || [])
-          .flatMap(g => g.actions || [])
-          .map(a => a.info ? a.info.toLowerCase() : '')
-          .join(' ');
-        const fullText = `${nodeDescription} ${gatewayInfo}`;
-        return fullText.includes(searchTerm.toLowerCase());
-      
-      });
+    const nodeDescription = node.descr ? node.descr.toLowerCase() : '';
+    const nodeAuthor = node.author ? node.author.toLowerCase() : '';
+    const fullText = `${nodeDescription} ${nodeAuthor}`;
+    return fullText.includes(searchTerm.toLowerCase());
+  });
 
-      if (filteredNodes.length === 0) {
-        const p = document.createElement("p");
-        p.textContent = "No Nodes found";
-        nodeListContainer.appendChild(p);
-        return;
+  if (filteredNodes.length === 0) {
+    const p = document.createElement("p");
+    p.textContent = "No Nodes found";
+    nodeListContainer.appendChild(p);
+    return;
+  }
+
+  filteredNodes.forEach(node => {
+    if (node.config && node.config.app_metadata && node.config.public_key) {
+      const nodeCard = document.createElement("div");
+      nodeCard.className = "node-card";
+
+      const logo = document.createElement("img");
+      logo.src = node.config.app_metadata.logo;
+      logo.alt = `${node.config.app_metadata.name} logo`;
+      logo.className = "node-logo";
+      nodeCard.appendChild(logo);
+
+      const title = document.createElement("h4");
+      title.textContent = `${node.config.app_metadata.name}`;
+      nodeCard.appendChild(title);
+
+      const metadataDiv = document.createElement("div");
+      metadataDiv.innerHTML = `
+        <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
+        <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
+      `;
+      nodeCard.appendChild(metadataDiv);
+
+      if (node.config.legals) {
+        const legalsDiv = document.createElement("div");
+        legalsDiv.innerHTML = `
+          <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
+          <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
+        `;
+        nodeCard.appendChild(legalsDiv);
       }
 
-      filteredNodes.forEach(node => {
-        if (node.config && node.config.app_metadata && node.config.public_key) {
-          const nodeCard = document.createElement("div");
-          nodeCard.className = "node-card";
+      const nodePublicKeyDiv = document.createElement("div");
+      nodePublicKeyDiv.innerHTML = `
+        <p class="public-key"><strong>Public Key:</strong> ${node.config.public_key}</p>
+      `;
+      nodeCard.appendChild(nodePublicKeyDiv);
 
-          const logo = document.createElement("img");
-          logo.src = node.config.app_metadata.logo;
-          logo.alt = `${node.config.app_metadata.name} logo`;
-          logo.className = "node-logo";
-          nodeCard.appendChild(logo);
+      const btn = document.createElement("button");
+      btn.textContent = "Start App";
+      btn.className = "start-app-btn";
 
+      btn.addEventListener("click", async () => {
+        const gatewayID = node.config.app_metadata.node_id;
+        const url = `https://neuronum.net/browser/api/activate_tx/${encodeURIComponent(gatewayID)}`;
+        const publicKeyJwk = localStorage.getItem('publicKey');
+        if (!publicKeyJwk) return;
 
-          const title = document.createElement("h4");
-          title.textContent = `${node.config.app_metadata.name}`;
-          nodeCard.appendChild(title);
+        const nodePublicKeyJwk = await convertPemToJwk(node.config.public_key);
+        if (!nodePublicKeyJwk) {
+          showCustomAlert("Error", "Failed to convert node public key.");
+          return;
+        }
 
-          const metadataDiv = document.createElement("div");
-          metadataDiv.innerHTML = `
-            <p><strong>Version:</strong> ${node.config.app_metadata.version}</p>
-            <p><strong>Author:</strong> ${node.config.app_metadata.author}</p>
-          `;
-          nodeCard.appendChild(metadataDiv);
+        const dataToEncrypt = { action: "start_app" };
+        const encryptedData = await encryptPayload(dataToEncrypt, nodePublicKeyJwk);
+        const payload = {
+          data: {
+            encrypted: encryptedData,
+            publicKey: publicKeyJwk
+          },
+          host: host,
+          session: session
+        };
 
-          if (node.config && node.config.legals) {
-            const legalsDiv = document.createElement("div");
-            legalsDiv.innerHTML = `
-              <p><a href="${node.config.legals.terms}" target="_blank">Terms of Service</a></p>
-              <p><a href="${node.config.legals.privacy_policy}" target="_blank">Privacy Policy</a></p>
-            `;
-            nodeCard.appendChild(legalsDiv);
-          }
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
 
-          const nodePublicKeyDiv = document.createElement("div");
-          nodePublicKeyDiv.innerHTML = `
-            <p class="public-key"><strong>Public Key:</strong> ${node.config.public_key}</p>
-          `;
-          nodeCard.appendChild(nodePublicKeyDiv);
-
-          if (node.config && Array.isArray(node.config.data_gateways) && node.config.data_gateways.length > 0) {
-            const gatewayList = document.createElement("ul");
-            gatewayList.style.listStyle = "none";
-            gatewayList.style.paddingLeft = "0";
-
-            const actionsPresent = node.config.data_gateways.some(gateway =>
-              gateway.node_id && gateway.node_id.endsWith("::node") && Array.isArray(gateway.actions) && gateway.actions.length > 0
-            );
-
-            if (actionsPresent) {
-              const actionsTitle = document.createElement("h4");
-              actionsTitle.style.marginTop = "25px";
-              actionsTitle.textContent = "Actions";
-              nodeCard.appendChild(actionsTitle);
-            }
-
-            node.config.data_gateways.forEach(gateway => {
-              const gatewayID = gateway.node_id;
-
-              if (gatewayID && gatewayID.endsWith("::node") && Array.isArray(gateway.actions) && gateway.actions.length > 0) {
-                gateway.actions.forEach(actionItem => {
-                  const li = document.createElement("li");
-                  li.style.marginBottom = "10px";
-
-                  const btn = document.createElement("button");
-                  btn.className = "gateway-btn";
-                  btn.textContent = actionItem.info;
-
-                  btn.addEventListener("click", async () => {
-                    const url = `https://neuronum.net/browser/api/activate_tx/${encodeURIComponent(gatewayID)}`;
-                    const publicKeyJwk = localStorage.getItem('publicKey');
-                    if (!publicKeyJwk) return;
-
-                    const nodePublicKeyJwk = await convertPemToJwk(node.config.public_key);
-                    console.log(node.config.public_key)
-                    if (!nodePublicKeyJwk) {
-                      showCustomAlert("Error", "Failed to convert node public key.");
-                      return;
-                    }
-
-                    console.log(nodePublicKeyJwk);
-                    const dataToEncrypt = { action: actionItem.action }; // This needs to be the payload to encrypt
-                    const encryptedData = await encryptPayload(dataToEncrypt, nodePublicKeyJwk);
-                    const payload = {
-                        data: {
-                            encrypted: encryptedData,
-                            publicKey: publicKeyJwk
-                        },
-                        host: host,
-                        session: session
-                    };
-
-                    console.log(payload);
-
-                    try {
-                      const res = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                      });
-
-                      if (res.ok) {
-                        const data = await res.json();
-                        if (data.success && data.response) {
-                          try {
-                            const decrypted = await decryptPayload(data.response);
-                            handleTxResponse(decrypted, host, session);
-                          } catch (decryptError) {
-                            handleTxResponse(null, host, session);
-                          }
-                        } else {
-                          handleTxResponse(null, host, session);
-                        }
-                      } else {
-                        handleTxResponse(null, host, session);
-                      }
-                    } catch (err) {
-                      handleTxResponse(null, host, session);
-                    }
-                  });
-
-                  li.appendChild(btn);
-                  gatewayList.appendChild(li);
-                });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.response) {
+              try {
+                const decrypted = await decryptPayload(data.response);
+                handleTxResponse(decrypted, host, session);
+              } catch (decryptError) {
+                handleTxResponse(null, host, session);
               }
-            });
-
-            nodeCard.appendChild(gatewayList);
+            } else {
+              handleTxResponse(null, host, session);
+            }
           } else {
-            const p = document.createElement("p");
-            p.textContent = "(no gateways)";
-            nodeCard.appendChild(p);
+            handleTxResponse(null, host, session);
           }
-
-          nodeListContainer.appendChild(nodeCard);
+        } catch (err) {
+          handleTxResponse(null, host, session);
         }
       });
+
+      nodeCard.appendChild(btn);
+
+      nodeListContainer.appendChild(nodeCard);
     }
+  });
+}
+
 
     document.getElementById('update-nodes').addEventListener('click', async function (e) {
       e.preventDefault();
